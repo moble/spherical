@@ -1,6 +1,7 @@
 # Copyright (c) 2020, Michael Boyle
 # See LICENSE file for details: <https://github.com/moble/waveforms/blob/master/LICENSE>
 
+import sys
 import numpy as np
 from numpy import *
 import pytest
@@ -9,6 +10,7 @@ import spherical as sf
 
 @pytest.mark.parametrize("eth, spin_weight_of_eth", [(sf.eth_NP, 1), (sf.eth_GHP, 1),
                                                      (sf.ethbar_NP, -1), (sf.ethbar_GHP, -1)])
+@pytest.mark.skipif(sys.platform == "darwin", reason="FFTW is missing")
 def test_eth_derivation(eth, spin_weight_of_eth):
     """Ensure that the various `eth` operators are derivations -- i.e., they obey the Leibniz product law
 
