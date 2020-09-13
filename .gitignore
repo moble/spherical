@@ -64,3 +64,4 @@ spherical.zip
 MANIFEST
 _version.py
 virtualenv
+*.npy

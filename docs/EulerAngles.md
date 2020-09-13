@@ -1,4 +1,4 @@
-### Euler angles
+# Euler angles
 
 Euler angles are a terrible set of coordinates for the rotation group.
 Compared to the other three standard presentations of rotations (rotation
@@ -8,7 +8,7 @@ rotations is complicated, numerically slow and inaccurate, and essentially
 requires transformation to a different presentation anyway.  Interpolation of
 Euler angles is meaningless and prone to severe distortions.  Most damningly of
 all are the coordinate singularities (gimbal lock).  To summarize, Euler angles
-are absolutely --- and by a wide margin --- the worst way to deal with
+are absolutely — and by a wide margin — the worst way to deal with
 rotations.
 
 We can work entirely without Euler angles.  (My own work simply never uses
@@ -18,10 +18,10 @@ work entirely without Euler angles, it can sometimes be useful to compare to
 other results.  So, to make contact with that literature, we will need to
 choose a convention for constructing a rotation from a triple of angles
 $(\alpha, \beta, \gamma)$.  We therefore define the rotor
-\begin{equation*}
-  R_{(\alpha, \beta, \gamma)} = e^{\alpha\, \vec{z}/2}\, e^{\beta\,
+\begin{equation}
+  R\_{(\alpha, \beta, \gamma)} = e^{\alpha\, \vec{z}/2}\, e^{\beta\,
   \vec{y}/2}\, e^{\gamma\, \vec{z}/2}.
-\end{equation*}
+\end{equation}
 This can be obtained as a `quaternionic.array` object in python as
 
 ```python
@@ -43,23 +43,23 @@ It is worth noting that the standard right-handed basis vectors $(\vec{x},
 \vec{y}, \vec{z})$ can be identified with generators of rotations usually
 seen in quantum mechanics (or generally just special-function theory) according
 to the rule
-\begin{align*}
-  \frac{\vec{x}}{2} &\mapsto -i\, J_x, \\\\\\\\
-  \frac{\vec{y}}{2} &\mapsto -i\, J_y, \\\\\\\\
-  \frac{\vec{z}}{2} &\mapsto -i\, J_z.
-\end{align*}
+\begin{align}
+  \frac{\vec{x}}{2} &\mapsto -i\, J\_x, \\\\\\\\
+  \frac{\vec{y}}{2} &\mapsto -i\, J\_y, \\\\\\\\
+  \frac{\vec{z}}{2} &\mapsto -i\, J\_z.
+\end{align}
 This is important when relating quaternion expressions to expressions more
 commonly seen in the literature.  In particular, with this identification, we
 have the usual commutation relations
-\begin{align*}
+\begin{align}
   \left[\frac{\vec{x}}{2}, \frac{\vec{y}}{2}\right] = \frac{\vec{z}}{2} &\mapsto [J_x, J_y] = i\, J_z, \\\\\\\\
   \left[\frac{\vec{y}}{2}, \frac{\vec{z}}{2}\right] = \frac{\vec{x}}{2} &\mapsto [J_y, J_z] = i\, J_x, \\\\\\\\
   \left[\frac{\vec{z}}{2}, \frac{\vec{x}}{2}\right] = \frac{\vec{y}}{2} &\mapsto [J_z, J_x] = i\, J_y.
-\end{align*}
+\end{align}
 And in any case, this certainly clarifies what to do with expressions like the
 following from Wikipedia:
-\begin{equation*}
+\begin{equation}
   \mathcal{R}(\alpha,\beta,\gamma) = e^{-i\alpha\, J_z}\,
   e^{-i\beta\, J_y} e^{-i\gamma\, J_z},
-\end{equation*}
+\end{equation}
 which shows that my interpretation of Euler angles is the same as Wikipedia's.

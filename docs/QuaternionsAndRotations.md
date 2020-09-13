@@ -1,12 +1,12 @@
 ## Quaternions, rotations, spherical coordinates
 
 A unit quaternion (or "rotor") $\mathbf{R}$ can rotate a vector
-$\vec{v}$ into a new vector $\Rotated{\vec{v}}$ according to the
+$\vec{v}$ into a new vector $\vec{v}'$ according to the
 formula
-\begin{equation*}
-  \Rotated{\vec{v}} = \mathbf{R}\, \vec{v}\, \mathbf{R}^{-1}.
-\end{equation*}
-In principle, a unit quaternion obeys $\co{\mathbf{R}} =
+\begin{equation}
+  \vec{v}' = \mathbf{R}\, \vec{v}\, \mathbf{R}^{-1}.
+\end{equation}
+In principle, a unit quaternion obeys $\bar{\mathbf{R}} =
 \mathbf{R}^{-1}$.  In practice, however, there are cases where the
 system is (slightly slower, but) more stable numerically if the
 explicit inversion is used.  And since the inversion is such a simple
@@ -18,7 +18,7 @@ $\mathfrak{D}$ is a representation.  That is, we don't need to use
 Euler angles or rotation matrices at all.  In fact, the resulting
 expressions are at least as simple as those using Euler angles, but
 are faster and more accurate to compute.  The derivation is shown on
-[this page](WignerDMatrices.html).
+[this page](WignerDMatrices).
 
 ![Spherical-coordinate system; By Andeggs, via Wikimedia Commons](images/3D_Spherical_Coords.svg)
 
@@ -33,9 +33,9 @@ $\vec{x}$ axis, as shown in the figure.
 
 Now, if $\hat{n}$ is the unit vector in that direction, we construct a
 related rotor
-\begin{equation*}
+\begin{equation}
   R_{(\vartheta, \varphi)} = e^{\varphi \vec{z}/2}\, e^{\vartheta \vec{y}/2}.
-\end{equation*}
+\end{equation}
 This can be obtained as a `quaternionic.array` object in python as
 
 ```python
@@ -54,14 +54,14 @@ This rotor is particularly useful, because $\hat{n}$ and the two
 standard tangent vectors at that point are all given by rotations of
 the basis vectors $(\vec{x}, \vec{y}, \vec{z})$.  Specifically,
 we have
-\begin{align*}
+\begin{align}
   \hat{\vartheta} &= R_{(\vartheta, \varphi)}\,\vec{x}\,R_{(\vartheta, \varphi)}^{-1}, \\\\\\\\
   \hat{\varphi} &= R_{(\vartheta, \varphi)}\, \vec{y}\, R_{(\vartheta, \varphi)}^{-1}, \\\\\\\\
   \hat{n} &= R_{(\vartheta, \varphi)}\, \vec{z}\, R_{(\vartheta, \varphi)}^{-1}.
-\end{align*}
+\end{align}
 Note that we interpret the rotations in the active sense, where a
 point moves, while our coordinate system and basis vectors are left
 fixed.  Hopefully, this won't cause too much confusion if we express
 the original point with the vector $\vec{z}$, for example, and the
 rotated point is therefore given by some $\mathbf{R}\, \vec{z}\,
-\mathbf{R}$.
+\bar{\mathbf{R}}$.
