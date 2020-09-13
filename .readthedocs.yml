@@ -1,0 +1,14 @@
+version: 2
+
+mkdocs:
+  configuration: mkdocs.yml
+
+python:
+  version: 3.8
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - mkdocs
+        - mktheapidocs
+        - pymdown-extensions

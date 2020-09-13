@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "spherical"
+version = "0.0.0-alpha.1"
+description = "Evaluate and transform D matrices, 3-j symbols, and (scalar or spin-weighted) spherical harmonics"
+readme = "README.md"
+license = "MIT"
+authors = ["Michael Boyle <michael.oliver.boyle@gmail.com>"]
+homepage = "https://github.com/moble/spherical"
+include = ["tests"]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+importlib-metadata = {version = "^1.0", python = "<3.8"}
+numpy = "^1.13"
+scipy = "^1.0"
+numba = {version = ">=0.50", markers = "implementation_name == 'cpython'"}
+mkdocs = {version = ">=1.1.2", optional = true, markers = "implementation_name == 'cpython'"}
+black = {version = ">=20.8b1", optional = true, markers = "implementation_name == 'cpython'"}
+mktheapidocs = {version = ">=0.2", optional = true, markers = "implementation_name == 'cpython'"}
+pymdown-extensions = {version = "^8", optional = true, markers = "implementation_name == 'cpython'"}
+quaternionic = "^0.1.15"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.0"
+pytest-cov = ">=2.10.1"
+spinsfast = "^104.2020.8"
+sympy = "^1.6.2"
+line_profiler = "^3.0.2"
+ipython = "<7.17"
+ipykernel = "^5.3.4"
+
+[tool.poetry.extras]
+mkdocs = ["mkdocs"]
+mktheapidocs = ["mktheapidocs"]
+pymdown-extensions = ["pymdown-extensions"]
+
+[tool.black]
+line-length = 120
+target-version = ['py36']
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+norecursedirs = ".* build dist gh-pages *.egg-info install ENV virtualenv __pycache__"
+junit_family="xunit2"
+addopts = "-s -v --tb=short --doctest-glob='' --cov=spherical --cov-branch --cov-report xml"
+
+[build-system]
+requires = ["poetry-core>=1.0.0a9"]
+build-backend = "poetry.core.masonry.api"
