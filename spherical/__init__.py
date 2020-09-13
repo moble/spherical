@@ -10,7 +10,12 @@ delivered at speeds approaching or exceeding speeds attained by pure C code.
 
 """
 
-from ._version import __version__
+try:
+    import importlib.metadata as importlib_metadata
+except ModuleNotFoundError:  # pragma: no cover
+    import importlib_metadata
+
+__version__ = importlib_metadata.version(__name__)
 
 __all__ = ['Wigner3j', 'Wigner_D_element', 'Wigner_D_matrices', 'SWSH', 'SWSH_grid',
            'factorial', 'binomial_coefficient', 'ladder_operator_coefficient']
