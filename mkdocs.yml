@@ -11,16 +11,18 @@ nav:
     - WignerDMatrices.md
     - PolynomialsWithFactorials.md
   - Conventions:
+    - Conventions.md
+    - 'Quaternions and Rotations': QuaternionsAndRotations.md
+    - EulerAngles.md
     - ComparingConventions.md
     - ComparingMathematica.md
-    - EulerAngles.md
   - API
 
 plugins:
   - mktheapidocs:
       modules:
         spherical:
-          section: api
+          section: API
           source_repo: "https://github.com/moble/spherical"
 
 theme:
