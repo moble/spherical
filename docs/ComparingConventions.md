@@ -1,7 +1,7 @@
----
----
-
 # Comparing conventions
+
+!!! important
+    This is very much a work in progress.  Pull requests are welcome!
 
 ## Goldstein-Poole-Safko "Classical Mechanics"
 
@@ -17,7 +17,7 @@ and solid-state physics.  Goldstein also has an Appendix on the
 various conventions.  I would write Goldstein's rotation as
 \begin{equation}
   \label{eq:GoldsteinEulerAngles}
-  e^{\phi \basis{z}/2}\, e^{\theta \basis{x}/2}\, e^{\psi \basis{z}/2}.
+  e^{\phi \vec{z}/2}\, e^{\theta \vec{x}/2}\, e^{\psi \vec{z}/2}.
 \end{equation}
 That's right, he uses $x$!  I think this means that my coordinate
 $\gamma$ would be related to his $\psi$ according to $\gamma = \psi -
@@ -76,30 +76,30 @@ versions of Edmonds.  But I think there's still an error.
 
 
 \begin{align\*}
-  R\_{\text{Devanathan}}(\alpha, \beta, \gamma)
+  R_{\text{Devanathan}}(\alpha, \beta, \gamma)
   &=
-  e^{\gamma \basis{z}''/2}\, e^{\beta \basis{y}'/2}\, e^{\alpha \basis{z}/2} \\\\\\\\
+  e^{\gamma \vec{z}''/2}\, e^{\beta \vec{y}'/2}\, e^{\alpha \vec{z}/2} \\\\\\\\
   &=
-  e^{\gamma \basis{z}''/2}\, e^{\beta e^{\alpha \basis{z}/2}\, \basis{y}\,
-  e^{-\alpha \basis{z}/2}/2}\, e^{\alpha \basis{z}/2} \\\\\\\\
+  e^{\gamma \vec{z}''/2}\, e^{\beta e^{\alpha \vec{z}/2}\, \vec{y}\,
+  e^{-\alpha \vec{z}/2}/2}\, e^{\alpha \vec{z}/2} \\\\\\\\
   &=
-  e^{\gamma \basis{z}''/2}\, e^{\alpha \basis{z}/2}\, e^{\beta
-  \basis{y}/2}\, e^{-\alpha \basis{z}/2}\, e^{\alpha \basis{z}/2} \\\\\\\\
+  e^{\gamma \vec{z}''/2}\, e^{\alpha \vec{z}/2}\, e^{\beta
+  \vec{y}/2}\, e^{-\alpha \vec{z}/2}\, e^{\alpha \vec{z}/2} \\\\\\\\
   &=
-  e^{\gamma \basis{z}''/2}\, e^{\alpha \basis{z}/2}\, e^{\beta
-  \basis{y}/2} \\\\\\\\
+  e^{\gamma \vec{z}''/2}\, e^{\alpha \vec{z}/2}\, e^{\beta
+  \vec{y}/2} \\\\\\\\
   &=
-  e^{\gamma e^{\alpha \basis{z}/2}\, e^{\beta \basis{y}/2} \basis{z}\,
-  e^{-\beta \basis{y}/2}\, e^{-\alpha \basis{z}/2}/2}\, e^{\alpha
-  \basis{z}/2}\, e^{\beta \basis{y}/2} \\\\\\\\
+  e^{\gamma e^{\alpha \vec{z}/2}\, e^{\beta \vec{y}/2} \vec{z}\,
+  e^{-\beta \vec{y}/2}\, e^{-\alpha \vec{z}/2}/2}\, e^{\alpha
+  \vec{z}/2}\, e^{\beta \vec{y}/2} \\\\\\\\
   &=
-  e^{\alpha \basis{z}/2}\, e^{\beta \basis{y}/2}\, e^{\gamma \basis{z}/2}\,
-  e^{-\beta \basis{y}/2}\, e^{-\alpha \basis{z}/2}\, e^{\alpha
-  \basis{z}/2}\, e^{\beta \basis{y}/2} \\\\\\\\
+  e^{\alpha \vec{z}/2}\, e^{\beta \vec{y}/2}\, e^{\gamma \vec{z}/2}\,
+  e^{-\beta \vec{y}/2}\, e^{-\alpha \vec{z}/2}\, e^{\alpha
+  \vec{z}/2}\, e^{\beta \vec{y}/2} \\\\\\\\
   &=
-  e^{\alpha \basis{z}/2}\, e^{\beta \basis{y}/2}\, e^{\gamma \basis{z}/2}
+  e^{\alpha \vec{z}/2}\, e^{\beta \vec{y}/2}\, e^{\gamma \vec{z}/2}
   \\\\\\\\
-  &= R\_{\text{spherical}}(\gamma, \beta, \alpha)
+  &= R_{\text{spherical}}(\gamma, \beta, \alpha)
 \end{align\*}
 
 
@@ -129,8 +129,8 @@ as the "passive $z$-$y$-$z$" convention).  This basically means that I have
 to swap the $\alpha$ and $\gamma$ arguments to keep mine consistent with
 sympy:
 \begin{equation\*}
-  R\_{\text{sympy}}(\alpha,\beta,\gamma) =
-  R\_{\text{spherical}}(\gamma,\beta,\alpha).
+  R_{\text{sympy}}(\alpha,\beta,\gamma) =
+  R_{\text{spherical}}(\gamma,\beta,\alpha).
 \end{equation\*}
 
 ### $\mathfrak{D}$ matrices

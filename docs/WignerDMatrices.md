@@ -1,6 +1,3 @@
----
----
-
 # Wigner $\mathfrak{D}$ matrices
 
 The Wigner $\mathfrak{D}$ matrices allow us to represent the rotation
@@ -11,13 +8,13 @@ more detail on [this page](SWSHs.html).  They are derived in terms of
 a particular split of the quaternion group into two parts.
 
 Explicitly, a quaternion $\quat{Q}$ can be expressed in terms of two
-complex numbers $\quat{Q}\_a = \quat{Q}\_1 + i\, \quat{Q}\_z$ and
-$\quat{Q}\_b = \quat{Q}\_y + i\, \quat{Q}\_x$.[^1] This is only
+complex numbers $\quat{Q}_a = \quat{Q}_1 + i\, \quat{Q}_z$ and
+$\quat{Q}_b = \quat{Q}_y + i\, \quat{Q}_x$.[^1] This is only
 important because it allows us to verify the multiplication law
 \begin{align}
   \label{eq:QuaternionComponentProducts}
-  (\quat{P}\,\quat{Q})\_a &= \quat{P}\_a\, \quat{Q}\_a - \co{\quat{P}}\_b\, \quat{Q}\_b, \\\\\\\\
-  (\quat{P}\,\quat{Q})\_b &= \quat{P}\_b\, \quat{Q}\_a + \co{\quat{P}}\_a\, \quat{Q}\_b.
+  (\quat{P}\,\quat{Q})_a &= \quat{P}_a\, \quat{Q}_a - \co{\quat{P}}_b\, \quat{Q}_b, \\\\
+  (\quat{P}\,\quat{Q})_b &= \quat{P}_b\, \quat{Q}_a + \co{\quat{P}}_a\, \quat{Q}_b.
 \end{align}
 Given a rotor $\rotor{R}$, these two complex numbers are the
 quantities actually used in computing the $\mathfrak{D}$ matrix
@@ -34,24 +31,24 @@ and is the source of the code used in this module.
 
 The basic idea of the derivation is to construct a
 $(2\ell+1)$-dimensional vector space of homogeneous polynomials in
-these complex numbers $\quat{Q}\_a$ and $\quat{Q}\_b$.  To make that a
+these complex numbers $\quat{Q}_a$ and $\quat{Q}_b$.  To make that a
 little more concrete, the basis of this vector space is
-\begin{equation\*}
+\begin{equation*}
   \label{WignerBasisComponent}
-  \mathbf{e}\_{(m)}(\quat{Q}) \defined
-    \frac{\quat{Q}\_{a}^{\ell+m}\, \quat{Q}\_{b}^{\ell-m}}
+  \mathbf{e}_{(m)}(\quat{Q}) \defined
+    \frac{\quat{Q}_{a}^{\ell+m}\, \quat{Q}_{b}^{\ell-m}}
     {\sqrt{ (\ell+m)!\, (\ell-m)! }}.
-\end{equation\*}
+\end{equation*}
 Here, $m$ ranges from $-\ell$ to $\ell$ in steps of $1$, but $\ell$
 (and hence $m$) can be a half-integer.  Now, the key idea is that a
 rotation of $\quat{Q}$ by some new rotor $\quat{R}$ gives us a new
 vector basis, which we can represent in terms of the basis shown
 above.  In fact, we get a matrix transforming one set of basis vectors
 to another.  We'll write this as
-\begin{equation\*}
-  \mathbf{e}\_{(m')}(\quat{R}\, \quat{Q})
-  = \sum\_{m} \mathfrak{D}^{(\ell)}\_{m',m}(\quat{R})\, \mathbf{e}\_{(m)}(\quat{Q}).
-\end{equation\*}
+\begin{equation*}
+  \mathbf{e}_{(m')}(\quat{R}\, \quat{Q})
+  = \sum_{m} \mathfrak{D}^{(\ell)}_{m',m}(\quat{R})\, \mathbf{e}_{(m)}(\quat{Q}).
+\end{equation*}
 
 So now, we've defined the $\mathfrak{D}$ matrices.  But we can also
 plug $\quat{R}\, \quat{Q}$ into the original expression for
@@ -67,39 +64,39 @@ First, if $\lvert \quat{R}_a \rvert \lesssim 10^{-15}$, for example,
 we can just ignore it; since $\lvert \quat{R} \rvert=1$ (within
 numerical precision), we are assured that $\lvert \quat{R}_b \rvert
 \approx 1$.  Thus, we get
-\begin{align\*}
-  \mathbf{e}\_{(m')}(\quat{R}\, \quat{Q})
-  &\approx \frac{ (- \co{\quat{R}}\_{b}\, \quat{Q}\_{b})^{\ell+m'}\,
-    (\quat{R}\_{b}\, \quat{Q}\_{a})^{\ell-m'} } { \sqrt{
-      (\ell+m')!\, (\ell-m')! } }, \\\\\\\\
-  &\approx (- \co{\quat{R}}\_{b})^{\ell+m'}\,
-  (\quat{R}\_{b})^{\ell-m'}\, \mathbf{e}\_{(-m')}(\quat{Q}).
-\end{align\*}
+\begin{align*}
+  \mathbf{e}_{(m')}(\quat{R}\, \quat{Q})
+  &\approx \frac{ (- \co{\quat{R}}_{b}\, \quat{Q}_{b})^{\ell+m'}\,
+    (\quat{R}_{b}\, \quat{Q}_{a})^{\ell-m'} } { \sqrt{
+      (\ell+m')!\, (\ell-m')! } }, \\\\
+  &\approx (- \co{\quat{R}}_{b})^{\ell+m'}\,
+  (\quat{R}_{b})^{\ell-m'}\, \mathbf{e}_{(-m')}(\quat{Q}).
+\end{align*}
 In this case, it's not hard to see that the expression for the
 $\mathfrak{D}$ matrix is
 \begin{equation}
-  \label{eq:D\_RaApprox0}
-  \mathfrak{D}^{(\ell)}\_{m',m}(\quat{R})
-  = (-1)^{\ell+m'}\, \quat{R}\_b^{-2m'} \delta\_{-m',m}
-  = (-1)^{\ell+m}\, \quat{R}\_b^{2m} \delta\_{-m',m}.
+  \label{eq:D_RaApprox0}
+  \mathfrak{D}^{(\ell)}_{m',m}(\quat{R})
+  = (-1)^{\ell+m'}\, \quat{R}_b^{-2m'} \delta_{-m',m}
+  = (-1)^{\ell+m}\, \quat{R}_b^{2m} \delta_{-m',m}.
 \end{equation}
 In the same way, we can calculate this for $\lvert \quat{R}_b \rvert
 \lesssim 10^{-15}$:
 {::comment}
-\begin{align\*}
-  \mathbf{e}\_{(m')}(\quat{R}\, \quat{Q})
-  &\approx \frac{ (\quat{R}\_{a}\, \quat{Q}\_{a})^{\ell+m'}\,
-    (\co{\quat{R}}\_{a}\, \quat{Q}\_{b})^{\ell-m'} } { \sqrt{
-      (\ell+m')!\, (\ell-m')! } }, \\\\\\\\
-  &\approx (\quat{R}\_{a})^{\ell+m'}\,
-  (\co{\quat{R}}\_{a})^{\ell-m'}\, \mathbf{e}\_{(m')}(\quat{Q}).
-\end{align\*}
+\begin{align*}
+  \mathbf{e}_{(m')}(\quat{R}\, \quat{Q})
+  &\approx \frac{ (\quat{R}_{a}\, \quat{Q}_{a})^{\ell+m'}\,
+    (\co{\quat{R}}_{a}\, \quat{Q}_{b})^{\ell-m'} } { \sqrt{
+      (\ell+m')!\, (\ell-m')! } }, \\\\
+  &\approx (\quat{R}_{a})^{\ell+m'}\,
+  (\co{\quat{R}}_{a})^{\ell-m'}\, \mathbf{e}_{(m')}(\quat{Q}).
+\end{align*}
 {:/comment}
 \begin{equation}
-  \label{eq:D\_RbApprox0}
-  \mathfrak{D}^{(\ell)}\_{m',m}(\quat{R})
-  = \quat{R}\_a^{2m'} \delta\_{m',m}
-  = \quat{R}\_a^{2m} \delta\_{m',m}.
+  \label{eq:D_RbApprox0}
+  \mathfrak{D}^{(\ell)}_{m',m}(\quat{R})
+  = \quat{R}_a^{2m'} \delta_{m',m}
+  = \quat{R}_a^{2m} \delta_{m',m}.
 \end{equation}
 
 Now, the other fork in that road is the general case, when both
@@ -111,11 +108,11 @@ After [a little simplification](WignerDDerivation.html), we can
 express the result as
 \begin{multline}
   \label{eq:DAnalytically}
-  \mathfrak{D}^{(\ell)}\_{m',m}(\quat{R})
-  = \sum\_{\rho} \binom{\ell+m'} {\rho}\, \binom{\ell-m'}
-  {\ell-\rho-m}\, (-1)^{\rho}\, \\\\\\\\ \times \quat{R}\_{a}^{\ell+m'-\rho}\,
-  \co{\quat{R}}\_{a}^{\ell-\rho-m}\,
-  \quat{R}\_{b}^{\rho-m'+m}\, \co{\quat{R}}\_{b}^{\rho}\,
+  \mathfrak{D}^{(\ell)}_{m',m}(\quat{R})
+  = \sum_{\rho} \binom{\ell+m'} {\rho}\, \binom{\ell-m'}
+  {\ell-\rho-m}\, (-1)^{\rho}\, \\\\ \times \quat{R}_{a}^{\ell+m'-\rho}\,
+  \co{\quat{R}}_{a}^{\ell-\rho-m}\,
+  \quat{R}_{b}^{\rho-m'+m}\, \co{\quat{R}}_{b}^{\rho}\,
   \sqrt{ \frac{ (\ell+m)!\, (\ell-m)! } { (\ell+m')!\,
       (\ell-m')! } }.
 \end{multline}
@@ -127,33 +124,33 @@ be polluted with roundoff, etc.  So we manipulate it to put it in a
 better form.  For example, we can simplify the above as
 \begin{align}
   \nonumber
-  \mathfrak{D}^{(\ell)}\_{m',m}(\quat{R})
+  \mathfrak{D}^{(\ell)}_{m',m}(\quat{R})
   &=
   \sqrt{ \frac{ (\ell+m)!\, (\ell-m)! } { (\ell+m')!\, (\ell-m')! } }\,
-  \quat{R}\_{a}^{\ell+m'}\,
-  \co{\quat{R}}\_{a}^{\ell-m}\,
-  \quat{R}\_{b}^{-m'+m} \\\\\\\\
+  \quat{R}_{a}^{\ell+m'}\,
+  \co{\quat{R}}_{a}^{\ell-m}\,
+  \quat{R}_{b}^{-m'+m} \\\\
   \nonumber
   &\qquad
-  \times \sum\_{\rho}
+  \times \sum_{\rho}
   \binom{\ell+m'} {\rho}\, \binom{\ell-m'} {\ell-\rho-m}\,
   (-1)^{\rho}\,
-  \quat{R}\_{a}^{-\rho}\,
-  \co{\quat{R}}\_{a}^{-\rho}\,
-  \quat{R}\_{b}^{\rho}\,
-  \co{\quat{R}}\_{b}^{\rho}, \\\\\\\\
+  \quat{R}_{a}^{-\rho}\,
+  \co{\quat{R}}_{a}^{-\rho}\,
+  \quat{R}_{b}^{\rho}\,
+  \co{\quat{R}}_{b}^{\rho}, \\\\
   \nonumber
   &=
   \sqrt{ \frac{ (\ell+m)!\, (\ell-m)! } { (\ell+m')!\, (\ell-m')! } }\,
-  \lvert \quat{R}\_{a} \rvert^{2\ell-2m}\,
-  \quat{R}\_{a}^{m'+m}\,
-  \quat{R}\_{b}^{-m'+m} \\\\\\\\
-  \label{eq:D\_RaGeqRb}
+  \lvert \quat{R}_{a} \rvert^{2\ell-2m}\,
+  \quat{R}_{a}^{m'+m}\,
+  \quat{R}_{b}^{-m'+m} \\\\
+  \label{eq:D_RaGeqRb}
   &\qquad
-  \times \sum\_{\rho}
+  \times \sum_{\rho}
   \binom{\ell+m'} {\rho}\, \binom{\ell-m'} {\ell-\rho-m}\,
-  \left( - \frac{\lvert \quat{R}\_{b} \rvert^2}
-  {\lvert \quat{R}\_{a} \rvert^2} \right)^{\rho}.
+  \left( - \frac{\lvert \quat{R}_{b} \rvert^2}
+  {\lvert \quat{R}_{a} \rvert^2} \right)^{\rho}.
 \end{align}
 Typically, this last expression can be evaluated pretty efficiently.
 
@@ -170,7 +167,7 @@ polynomial uses
 [Horner form](http://reference.wolfram.com/language/ref/HornerForm.html) ---
 which is both faster and more accurate than the naive approach.  Also, since
 the coefficients involve factorials of the summation index, we can factor
-out the $\rho\_{\text{min}}$ binomials, and be left with just a few
+out the $\rho_{\text{min}}$ binomials, and be left with just a few
 factorials, which we can then
 [evaluate more efficiently](PolynomialsWithFactorials.html).  This also
 allows us to pull out the lowest-order coefficient of that polynomial:
@@ -215,15 +212,15 @@ reverses the roles of $a$ and $b$.  It turns out that this isn't hard.
 In deriving Eq. \eqref{eq:DAnalytically}, a choice was made regarding
 the summation variable.  We can simply transform that summation
 variable as $\rho \mapsto \ell-m-\rho$, and obtain
-\begin{multline\*}
-  \mathfrak{D}^{(\ell)}\_{m',m}(\quat{R})
-  = \sum\_{\rho} \binom{\ell+m'} {\ell-m-\rho}\, \binom{\ell-m'}
-  {\rho}\, (-1)^{\ell-m-\rho}\, \\\\\\\\ \times
-  \quat{R}\_{a}^{m'+m+\rho}\, \co{\quat{R}}\_{a}^{\rho}\,
-  \quat{R}\_{b}^{\ell-m'-\rho}\, \co{\quat{R}}\_{b}^{\ell-m-\rho}\,
+\begin{multline*}
+  \mathfrak{D}^{(\ell)}_{m',m}(\quat{R})
+  = \sum_{\rho} \binom{\ell+m'} {\ell-m-\rho}\, \binom{\ell-m'}
+  {\rho}\, (-1)^{\ell-m-\rho}\, \\\\ \times
+  \quat{R}_{a}^{m'+m+\rho}\, \co{\quat{R}}_{a}^{\rho}\,
+  \quat{R}_{b}^{\ell-m'-\rho}\, \co{\quat{R}}_{b}^{\ell-m-\rho}\,
   \sqrt{ \frac{ (\ell+m)!\, (\ell-m)! } { (\ell+m')!\,
       (\ell-m')! } }.
-\end{multline\*}
+\end{multline*}
 It's interesting to note the symmetry with the earlier version of this
 equation; we've essentially just exchanged the labels $a$ and $b$,
 while also reversing the sign of $m'$, and multiplying by an overall
@@ -233,52 +230,52 @@ In any case, we can apply the same simplification to this expression
 as before:
 \begin{align}
   \nonumber
-  \mathfrak{D}^{(\ell)}\_{m',m}(\quat{R})
+  \mathfrak{D}^{(\ell)}_{m',m}(\quat{R})
   &=
   (-1)^{\ell-m}
   \sqrt{ \frac{ (\ell+m)!\, (\ell-m)! } { (\ell+m')!\, (\ell-m')! } }
-  \quat{R}\_{a}^{m'+m}\,
-  \quat{R}\_{b}^{\ell-m'}\,
-  \co{\quat{R}}\_{b}^{\ell-m}
-  \\\\\\\\
+  \quat{R}_{a}^{m'+m}\,
+  \quat{R}_{b}^{\ell-m'}\,
+  \co{\quat{R}}_{b}^{\ell-m}
+  \\\\
   \nonumber
   &\qquad
-  \times \sum\_{\rho}
+  \times \sum_{\rho}
   \binom{\ell+m'} {\ell-m-\rho}\, \binom{\ell-m'} {\rho}\,
   (-1)^\rho\,
-  \quat{R}\_{a}^{\rho}\,
-  \co{\quat{R}}\_{a}^{\rho}\,
-  \quat{R}\_{b}^{-\rho}\,
-  \co{\quat{R}}\_{b}^{-\rho}
-  \\\\\\\\
+  \quat{R}_{a}^{\rho}\,
+  \co{\quat{R}}_{a}^{\rho}\,
+  \quat{R}_{b}^{-\rho}\,
+  \co{\quat{R}}_{b}^{-\rho}
+  \\\\
   \nonumber
   &=
   (-1)^{\ell-m}
   \sqrt{ \frac{ (\ell+m)!\, (\ell-m)! } { (\ell+m')!\, (\ell-m')! } }
-  \quat{R}\_{a}^{m'+m}\,
-  \quat{R}\_{b}^{m-m'}\,
-  \lvert \quat{R}\_{b} \rvert^{2\ell-2m}
-  \\\\\\\\
-  \label{eq:D\_RaLeqRb}
+  \quat{R}_{a}^{m'+m}\,
+  \quat{R}_{b}^{m-m'}\,
+  \lvert \quat{R}_{b} \rvert^{2\ell-2m}
+  \\\\
+  \label{eq:D_RaLeqRb}
   &\qquad
-  \times \sum\_{\rho}
+  \times \sum_{\rho}
   \binom{\ell+m'} {\ell-m-\rho}\, \binom{\ell-m'} {\rho}\,
-  \left( - \frac{ \lvert \quat{R}\_{a} \rvert^2 }
-  { \lvert \quat{R}\_{b} \vert^2 } \right)^{\rho}
+  \left( - \frac{ \lvert \quat{R}_{a} \rvert^2 }
+  { \lvert \quat{R}_{b} \vert^2 } \right)^{\rho}
 \end{align}
 And again, we evaluate this cleverly, as above.
 
 So we get four branches in our logic, with a different expression for
 $\mathfrak{D}$ in each branch:
 
-  1. When $\lvert \quat{R}\_a \rvert \lesssim 10^{-15}$, use
-     Eq. \eqref{eq:D\_RaApprox0}.
-  2. When $\lvert \quat{R}\_b \rvert \lesssim 10^{-15}$, use
-     Eq. \eqref{eq:D\_RbApprox0}.
-  3. When $\lvert \quat{R}\_a \rvert \geq \lvert \quat{R}\_b \rvert$,
-     use Eq. \eqref{eq:D\_RaGeqRb}.
-  4. When $\lvert \quat{R}\_a \rvert < \lvert \quat{R}\_b \rvert$, use
-     Eq. \eqref{eq:D\_RaLeqRb}.
+  1. When $\lvert \quat{R}_a \rvert \lesssim 10^{-15}$, use
+     Eq. \eqref{eq:D_RaApprox0}.
+  2. When $\lvert \quat{R}_b \rvert \lesssim 10^{-15}$, use
+     Eq. \eqref{eq:D_RbApprox0}.
+  3. When $\lvert \quat{R}_a \rvert \geq \lvert \quat{R}_b \rvert$,
+     use Eq. \eqref{eq:D_RaGeqRb}.
+  4. When $\lvert \quat{R}_a \rvert < \lvert \quat{R}_b \rvert$, use
+     Eq. \eqref{eq:D_RaLeqRb}.
 
 Note that these expressions are valid even for half-integer values of
 $\ell$, noting that if $\ell$ is half-integer, then so must $m'$ and
@@ -301,33 +298,33 @@ set $(\alpha, \beta, \gamma)$ of Euler angles (using conventions to
 agree with
 [Wikipedia's page](https://en.wikipedia.org/wiki/Wigner_D-matrix#Definition_of_the_Wigner_D-matrix)
 on $\mathfrak{D}$ matrices) can be written in quaternion form as
-\begin{align\*}
-  \quat{R}\_{(\alpha, \beta, \gamma)} &= e^{\alpha\, \basis{z}/2}\,
-  e^{\beta\, \basis{y}/2}\, e^{\gamma\, \basis{z}/2}, \\\\\\\\
+\begin{align*}
+  \quat{R}_{(\alpha, \beta, \gamma)} &= e^{\alpha\, \basis{z}/2}\,
+  e^{\beta\, \basis{y}/2}\, e^{\gamma\, \basis{z}/2}, \\\\
   &= \left(
       \cos \frac{\alpha}{2}\, \cos \frac{\beta}{2}\, \cos \frac{\gamma}{2}
       -\sin \frac{\alpha}{2}\, \cos \frac{\beta}{2}\, \sin \frac{\gamma}{2}
-    \right) \\\\\\\\
+    \right) \\\\
   &\qquad + \basis{x} \left(
       \cos \frac{\alpha}{2}\, \sin \frac{\beta}{2}\, \sin \frac{\gamma}{2}
       -\sin \frac{\alpha}{2}\, \sin \frac{\beta}{2}\, \cos \frac{\gamma}{2}
-    \right) \\\\\\\\
+    \right) \\\\
   &\qquad + \basis{y} \left(
       \cos \frac{\alpha}{2}\, \sin \frac{\beta}{2}\, \cos \frac{\gamma}{2}
       +\sin \frac{\alpha}{2}\, \sin \frac{\beta}{2}\, \sin \frac{\gamma}{2}
-    \right) \\\\\\\\
+    \right) \\\\
   &\qquad + \basis{z} \left(
       \sin \frac{\alpha}{2}\, \cos \frac{\beta}{2}\, \cos \frac{\gamma}{2}
       +\cos \frac{\alpha}{2}\, \cos \frac{\beta}{2}\, \sin \frac{\gamma}{2}
     \right).
-\end{align\*}
+\end{align*}
 Taking the complex components of this, we have
-\begin{equation\*}
-  \quat{R}\_a = e^{i\,\alpha/2}\, \cos\frac{\beta}{2}\, e^{i\,\gamma/2},
+\begin{equation*}
+  \quat{R}_a = e^{i\,\alpha/2}\, \cos\frac{\beta}{2}\, e^{i\,\gamma/2},
   \qquad
-  \quat{R}\_b = e^{-i\,\alpha/2}\, \sin\frac{\beta}{2}\, e^{i\,\gamma/2}.
-\end{equation\*}
-We can plug these values into, e.g., Eq. \eqref{eq:D\_RaGeqRb}, and
+  \quat{R}_b = e^{-i\,\alpha/2}\, \sin\frac{\beta}{2}\, e^{i\,\gamma/2}.
+\end{equation*}
+We can plug these values into, e.g., Eq. \eqref{eq:D_RaGeqRb}, and
 get the standard, hideous, reprehensible form of the $\mathfrak{D}$
 matrices in terms of Euler angles.
 

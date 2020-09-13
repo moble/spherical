@@ -15,8 +15,8 @@ RotationMatrix[psi, {0, 0, 1}].RotationMatrix[theta, {0, 1, 0}].RotationMatrix[p
 ```
 
 The latter, of course, would be equivalent to a rotor
-$e^{\psi\basis{z}/2}\, e^{\theta\basis{y}/2}\, e^{\phi\basis{z}/2}$,
-which is what I would have denoted $\rotor{R}_{(\psi, \theta,
+$e^{\psi\vec{z}/2}\, e^{\theta\vec{y}/2}\, e^{\phi\vec{z}/2}$,
+which is what I would have denoted $\mathbf{R}_{(\psi, \theta,
 \phi)}$.  So my rotor gives the inverse rotation of Mathematica's
 Euler angles.  This could also be viewed as a disagreement over active
 and passive transformations.
@@ -28,11 +28,11 @@ that
 WignerD[{j,m1,m2},psi,theta,phi]
 ```
 
-gives the function $\mathfrak{D}^j\_{m\_1,m\_2}(\psi,\theta,\phi)$, and
+gives the function $\mathfrak{D}^j_{m_1,m_2}(\psi,\theta,\phi)$, and
 the spherical harmonics are related to $\mathfrak{D}$ by
 
 \begin{equation}
-  \mathfrak{D}^\ell\_{0,m}(0, \theta, \phi) =
-  \sqrt{\frac{4\pi}{2\ell+1}} Y\_{\ell,m} (\theta, \phi).
+  \mathfrak{D}^\ell_{0,m}(0, \theta, \phi) =
+  \sqrt{\frac{4\pi}{2\ell+1}} Y_{\ell,m} (\theta, \phi).
 \end{equation}
 

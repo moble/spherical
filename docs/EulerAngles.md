@@ -18,10 +18,10 @@ work entirely without Euler angles, it can sometimes be useful to compare to
 other results.  So, to make contact with that literature, we will need to
 choose a convention for constructing a rotation from a triple of angles
 $(\alpha, \beta, \gamma)$.  We therefore define the rotor
-\begin{equation\*}
-  R\_{(\alpha, \beta, \gamma)} = e^{\alpha\, \basis{z}/2}\, e^{\beta\,
-  \basis{y}/2}\, e^{\gamma\, \basis{z}/2}.
-\end{equation\*}
+\begin{equation*}
+  R_{(\alpha, \beta, \gamma)} = e^{\alpha\, \vec{z}/2}\, e^{\beta\,
+  \vec{y}/2}\, e^{\gamma\, \vec{z}/2}.
+\end{equation*}
 This can be obtained as a `quaternionic.array` object in python as
 
 ```python
@@ -30,36 +30,36 @@ This can be obtained as a `quaternionic.array` object in python as
 >>> R_euler = quaternionic.array.from_euler_angles(alpha, beta, gamma)
 ```
 
-Note that the rotations are always taken about the *fixed* axes $\basis{z}$ and
-$\basis{y}$.  Also, this is in operator form, so it must be read from right to
+Note that the rotations are always taken about the *fixed* axes $\vec{z}$ and
+$\vec{y}$.  Also, this is in operator form, so it must be read from right to
 left: The rotation is given by an initial rotation through $\gamma$ about the
-$\basis{z}$ axis, followed by a rotation through $\beta$ about the $\basis{y}$
-axis, followed by a final rotation through $\alpha$ about the $\basis{z}$ axis.
+$\vec{z}$ axis, followed by a rotation through $\beta$ about the $\vec{y}$
+axis, followed by a final rotation through $\alpha$ about the $\vec{z}$ axis.
 This may seem slightly backwards, but it is a common convention --- in
 particular, it is the one adopted by Wikipedia in its
 [Wigner-D article](https://en.wikipedia.org/wiki/Wigner_D-matrix#Definition_of_the_Wigner_D-matrix).
 
-It is worth noting that the standard right-handed basis vectors $(\basis{x},
-\basis{y}, \basis{z})$ can be identified with generators of rotations usually
+It is worth noting that the standard right-handed basis vectors $(\vec{x},
+\vec{y}, \vec{z})$ can be identified with generators of rotations usually
 seen in quantum mechanics (or generally just special-function theory) according
 to the rule
-\begin{align\*}
-  \frac{\basis{x}}{2} &\mapsto -i\, J\_x, \\\\\\\\
-  \frac{\basis{y}}{2} &\mapsto -i\, J\_y, \\\\\\\\
-  \frac{\basis{z}}{2} &\mapsto -i\, J\_z.
-\end{align\*}
+\begin{align*}
+  \frac{\vec{x}}{2} &\mapsto -i\, J_x, \\\\\\\\
+  \frac{\vec{y}}{2} &\mapsto -i\, J_y, \\\\\\\\
+  \frac{\vec{z}}{2} &\mapsto -i\, J_z.
+\end{align*}
 This is important when relating quaternion expressions to expressions more
 commonly seen in the literature.  In particular, with this identification, we
 have the usual commutation relations
-\begin{align\*}
-  \left[\frac{\basis{x}}{2}, \frac{\basis{y}}{2}\right] = \frac{\basis{z}}{2} &\mapsto [J\_x, J\_y] = i\, J\_z, \\\\\\\\
-  \left[\frac{\basis{y}}{2}, \frac{\basis{z}}{2}\right] = \frac{\basis{x}}{2} &\mapsto [J\_y, J\_z] = i\, J\_x, \\\\\\\\
-  \left[\frac{\basis{z}}{2}, \frac{\basis{x}}{2}\right] = \frac{\basis{y}}{2} &\mapsto [J\_z, J\_x] = i\, J\_y.
-\end{align\*}
+\begin{align*}
+  \left[\frac{\vec{x}}{2}, \frac{\vec{y}}{2}\right] = \frac{\vec{z}}{2} &\mapsto [J_x, J_y] = i\, J_z, \\\\\\\\
+  \left[\frac{\vec{y}}{2}, \frac{\vec{z}}{2}\right] = \frac{\vec{x}}{2} &\mapsto [J_y, J_z] = i\, J_x, \\\\\\\\
+  \left[\frac{\vec{z}}{2}, \frac{\vec{x}}{2}\right] = \frac{\vec{y}}{2} &\mapsto [J_z, J_x] = i\, J_y.
+\end{align*}
 And in any case, this certainly clarifies what to do with expressions like the
 following from Wikipedia:
-\begin{equation\*}
-  \mathcal{R}(\alpha,\beta,\gamma) = e^{-i\alpha\, J\_z}\,
-  e^{-i\beta\, J\_y} e^{-i\gamma\, J\_z},
-\end{equation\*}
+\begin{equation*}
+  \mathcal{R}(\alpha,\beta,\gamma) = e^{-i\alpha\, J_z}\,
+  e^{-i\beta\, J_y} e^{-i\gamma\, J_z},
+\end{equation*}
 which shows that my interpretation of Euler angles is the same as Wikipedia's.

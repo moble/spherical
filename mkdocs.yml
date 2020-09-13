@@ -2,6 +2,20 @@ site_name: spherical
 
 repo_url: https://github.com/moble/spherical
 
+nav:
+  - Home: index.md
+  - 'Quaternions and Rotations': QuaternionsAndRotations.md
+  - 'Spin-weighted Spherical Harmonics': SWSHs.md
+  - Calculations:
+    - WignerDDerivation.md
+    - WignerDMatrices.md
+    - PolynomialsWithFactorials.md
+  - Conventions:
+    - ComparingConventions.md
+    - ComparingMathematica.md
+    - EulerAngles.md
+  - API
+
 plugins:
   - mktheapidocs:
       modules:
@@ -16,5 +30,6 @@ extra_javascript:
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
 
 markdown_extensions:
+  - admonition
   - pymdownx.arithmatex:
       generic: true
