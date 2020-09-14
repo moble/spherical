@@ -53,7 +53,7 @@ Of course, it's always better to use unit quaternions to describe rotations:
 ```python
 >>> import numpy as np
 >>> import quaternionic
->>> R = quaternionic.array(1,2,3,4).normalized()
+>>> R = quaternionic.array(1,2,3,4).normalized
 >>> ell,mp,m = 3,2,1
 >>> sf.Wigner_D_element(R, ell, mp, m)
 
