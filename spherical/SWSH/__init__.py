@@ -80,7 +80,7 @@ def SWSH_grid(R_grid, s, ell_max):
     Returns
     -------
     array of complex
-        The shape of this array is `R_grid.shape`, with an extra dimension of
+        The shape of this array is `R_grid.shape[:-1]`, with an extra dimension of
         length N_lm appended.  That extra dimension corresponds to the various
         (ell,m) values in standard order (e.g., as given by LM_range), starting
         from ell=0 for compatibility with spinsfast.
