@@ -61,7 +61,7 @@ def test_WignerDRecursion_timing():
         print('Time for ell_max={} grid points was {}ms per call; {}ns per element'.format(100, 1_000*time/number, 1_000_000_000*time/(number*size)))
 
 
-@pytest.mark.skipif(platform.system() != "Windows", reason="line_profiler is missing")
+@pytest.mark.skipif(platform.system() == "Windows", reason="line_profiler is missing")
 def test_WignerDRecursion_lineprofiling():
     from line_profiler import LineProfiler
     ell_max = 8
