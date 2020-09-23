@@ -35,7 +35,7 @@ def SWSH(R, s, indices):
         the SWSH for the (ell,m) values specified in `indices`.
 
     """
-    indices = np.asarray(indices)
+    indices = np.asarray(indices, dtype=np.int64)
     R = quaternionic.array(R)
     if indices.size > 2 or not isinstance(R, np.ndarray):
         values = np.empty((indices.shape[0],), dtype=np.complex128)
