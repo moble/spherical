@@ -87,7 +87,7 @@ def Wigner_D_element(*args):
             mode_offset = 1
         else:
             R = quaternionic.array(np.atleast_2d(args[0]))
-            elements = np.atleast_1d(np.empty(args[0].shape[:-1], dtype=complex))
+            elements = np.atleast_1d(np.empty(args[0].shape[:-1], dtype=np.complex128))
             _Wigner_D_elements(R.ndarray, args[1], args[2], args[3], elements)
             if elements.size == 1 and args[0].ndim == 1:
                 return elements[0]
@@ -112,14 +112,14 @@ def Wigner_D_element(*args):
     if (len(args) - mode_offset == 3):
         # Assume these are the (ell, mp, m) indices
         ell, mp, m = args[mode_offset:]
-        indices = np.array([[round(2*ell), round(2*mp), round(2*m)], ], dtype=int)
+        indices = np.array([[round(2*ell), round(2*mp), round(2*m)], ], dtype=np.int64)
         if (error_on_bad_indices and not _check_valid_indices(*(indices[0]))):
             raise ValueError(
                 "(ell,mp,m)=({0},{1},{2})".format(ell, mp, m)
                 + " is not a valid set of indices for Wigner's D matrix")
         return_scalar = True
     elif (len(args) - mode_offset == 1):
-        indices = np.round(2*np.asarray(args[mode_offset])).astype(int)
+        indices = np.round(2*np.asarray(args[mode_offset])).astype(np.int64)
         if (indices.ndim == 0 and indices.size == 1):
             # This was just a single ell value
             twoell = indices[0]  # already multiplied by 2
@@ -147,7 +147,7 @@ def Wigner_D_element(*args):
     else:
         raise ValueError("Can't understand input indices")
 
-    elements = np.empty((len(indices),), dtype=complex)
+    elements = np.empty((len(indices),), dtype=np.complex128)
     _Wigner_D_element(Ra, Rb, indices, elements)
 
     if (return_scalar):
@@ -390,7 +390,7 @@ def Wigner_D_matrices(R, ell_min, ell_max):
                  + "Input values ell_min={0} and ell_max={1} are not valid.\n".format(ell_min, ell_max)
                  + "Try `Wigner_D_element` with an explicit array of `indices` for half-integers.")
         raise ValueError(error)
-    matrices = np.empty((LMpM_total_size(ell_min, ell_max),), dtype=complex)
+    matrices = np.empty((LMpM_total_size(ell_min, ell_max),), dtype=np.complex128)
     _Wigner_D_matrices(R.a, R.b, ell_min, ell_max, matrices)
     return matrices
 

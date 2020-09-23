@@ -38,12 +38,12 @@ def SWSH(R, s, indices):
     indices = np.asarray(indices)
     R = quaternionic.array(R)
     if indices.size > 2 or not isinstance(R, np.ndarray):
-        values = np.empty((indices.shape[0],), dtype=complex)
+        values = np.empty((indices.shape[0],), dtype=np.complex128)
         Rs = R.two_spinor
         _SWSH(Rs.a, Rs.b, s, indices, values)
     else:
         indices = indices.flatten()
-        values = np.empty((R.size//4,), dtype=complex)
+        values = np.empty((R.size//4,), dtype=np.complex128)
         _SWSHs(quaternionic.array(R).flattened.ndarray, s, indices[0], indices[1], values)
         values = values.reshape(R.shape[:-1])
     return values
@@ -88,7 +88,7 @@ def SWSH_grid(R_grid, s, ell_max):
     """
     indices = LM_range(0, ell_max)
     R_grid = quaternionic.array(R_grid)
-    values = np.zeros(R_grid.shape[:-1] + (indices.shape[0],), dtype=complex)
+    values = np.zeros(R_grid.shape[:-1] + (indices.shape[0],), dtype=np.complex128)
     R = R_grid.flattened
     v = values.reshape((-1, indices.shape[0]))
     for i in range(R.shape[0]):
