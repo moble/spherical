@@ -103,7 +103,7 @@ def LM_range(ell_min, ell_max):
     # from sympy import symbols, summation
     # ell_min,ell,ell_max = symbols('ell_min,ell,ell_max', integer=True)
     # summation((2*ell + 1), (ell, ell_min, ell_max))
-    LM = np.empty((ell_max * (ell_max + 2) - ell_min ** 2 + 1, 2), dtype=int)
+    LM = np.empty((ell_max * (ell_max + 2) - ell_min ** 2 + 1, 2), dtype=np.int64)
     _LM_range(ell_min, ell_max, LM)
     return LM
 
@@ -192,7 +192,7 @@ def LMpM_range(ell_min, ell_max):
                  + "Try `LMpM_range_half_integer` instead.")
         raise ValueError(error)
     LMpM = np.empty(((ell_max * (11 + ell_max * (12 + 4 * ell_max)) + ell_min * (1 - 4 * ell_min ** 2) + 3) // 3, 3),
-                    dtype=int)
+                    dtype=np.int64)
     _LMpM_range(ell_min, ell_max, LMpM)
     return LMpM
 
@@ -226,7 +226,7 @@ def LMpM_range_half_integer(ell_min, ell_max):
     # twoell_min,twoell,twoell_max = symbols('twoell_min,twoell,twoell_max', integer=True)
     # summation((twoell + 1)**2, (twoell, twoell_min, twoell_max))
     LMpM = np.empty((int(((8*ell_max + 18)*ell_max + 13)*ell_max + 3 - ((8 * ell_min + 6) * ell_min + 1)*ell_min) // 3,
-                     3), dtype=float)
+                     3), dtype=np.float64)
     _LMpM_range_half_integer(round(2*ell_min), round(2*ell_max), LMpM)
     return LMpM
 

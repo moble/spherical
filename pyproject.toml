@@ -23,9 +23,9 @@ quaternionic = "^0.2.0"
 [tool.poetry.dev-dependencies]
 pytest = "^6.0"
 pytest-cov = ">=2.10.1"
-spinsfast = "^104.2020.8"
+spinsfast = {version = "^104.2020.8", markers = "sys_platform != 'win32'"}
 sympy = "^1.6.2"
-line_profiler = "^3.0.2"
+line_profiler = {version = "^3.0.2", markers = "sys_platform != 'win32'"}
 ipython = "<7.17"
 ipykernel = "^5.3.4"
 

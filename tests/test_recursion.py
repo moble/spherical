@@ -3,8 +3,10 @@
 # Copyright (c) 2020, Michael Boyle
 # See LICENSE file for details: <https://github.com/moble/spherical/blob/master/LICENSE>
 
+import platform
 import sympy
 import numpy as np
+import pytest
 import spherical as sf
 from spherical.WignerD.WignerDRecursion import HCalculator, _step_2, _step_3, _step_4, _step_5, _step_6
 
@@ -59,6 +61,7 @@ def test_WignerDRecursion_timing():
         print('Time for ell_max={} grid points was {}ms per call; {}ns per element'.format(100, 1_000*time/number, 1_000_000_000*time/(number*size)))
 
 
+@pytest.mark.skipif(platform.system() != "Windows", reason="line_profiler is missing")
 def test_WignerDRecursion_lineprofiling():
     from line_profiler import LineProfiler
     ell_max = 8

@@ -68,20 +68,20 @@ dₗⁿᵐ = ϵₙ ϵ₋ₘ Hₗⁿᵐ, where
        ⎩ (-1)ᵏ for k>0
 
 Symmetry relations:
-H^{m', m}_n(\beta) = H^{m, m'}_n(\beta)
-H^{m', m}_n(\beta) = H^{-m', -m}_n(\beta)
-H^{m', m}_n(\beta) = (-1)^{n+m+m'} H^{-m', m}_n(\pi - \beta)
-H^{m', m}_n(\beta) = (-1)^{m+m'} H^{m', m}_n(-\beta)
+H^{m', m}_n(β) = H^{m, m'}_n(β)
+H^{m', m}_n(β) = H^{-m', -m}_n(β)
+H^{m', m}_n(β) = (-1)^{n+m+m'} H^{-m', m}_n(π - β)
+H^{m', m}_n(β) = (-1)^{m+m'} H^{m', m}_n(-β)
 
 1: If n=0 set H_{0}^{0,0}=1.
 
 2: Compute values H^{0,m}_{n}(β)for m=0,...,n and H^{0,m}_{n+1}(β) for m=0,...,n+1 using Eq. (32):
-     H^{0,m}_{n}(β) = (-1)^m \sqrt{(n-|m|)!/(n+|m|)!} P^{|m|}_{n}(cos β)
+     H^{0,m}_{n}(β) = (-1)^m √{(n-|m|)!/(n+|m|)!} P^{|m|}_{n}(cos β)
 
 3: Use relation (41) to compute H^{1,m}_{n}(β) for m=1,...,n.  Using symmetry and shift of the
    indices this relation can be written as
-     b^{0}_{n+1} H^{1,m}_{n} = \frac{b^{−m−1}_{n+1} (1−cosβ)}{2} H^{0,m+1}_{n+1}
-                             − \frac{b^{m−1}_{n+1}  (1+cosβ)}{2} H^{0,m−1}_{n+1}
+     b^{0}_{n+1} H^{1,m}_{n} = (b^{−m−1}_{n+1} (1−cosβ))/2 H^{0,m+1}_{n+1}
+                             − (b^{m−1}_{n+1}  (1+cosβ))/2 H^{0,m−1}_{n+1}
                              − a^{m}_{n} sinβ H^{0,m}_{n+1}
 
 4: Recursively compute H^{m′+1,m}_{n}(β) for m′=1,...,n−1, m=m′,...,n using relation (50) resolved
@@ -156,8 +156,8 @@ sqrt2 = np.sqrt(2)
 @jit
 def _step_2(g, h, n_max, Hnmpm, Hextra, Hv, cosβ, sinβ):
     """Compute values H^{0,m}_{n}(β)for m=0,...,n and H^{0,m}_{n+1}(β) for m=0,...,n+1 using Eq. (32):
-        H^{0,m}_{n}(β) = (-1)^m \sqrt{(n-|m|)! / (n+|m|)!} P^{|m|}_{n}(cos β)
-                       = (-1)^m (sin β)^m \hat{P}^{|m|}_{n}(cos β) / \sqrt{k (2n+1)}
+        H^{0,m}_{n}(β) = (-1)^m √{(n-|m|)! / (n+|m|)!} P^{|m|}_{n}(cos β)
+                       = (-1)^m (sin β)^m P̂^{|m|}_{n}(cos β) / √{k (2n+1)}
 
     This function computes the associated Legendre functions directly by recursion as explained by
     Holmes and Featherstone (2002), doi:10.1007/s00190-002-0216-2.  Note that I had to adjust
@@ -234,8 +234,8 @@ def _step_2(g, h, n_max, Hnmpm, Hextra, Hv, cosβ, sinβ):
 def _step_3(a, b, n_max, Hnmpm, Hextra, cosβ, sinβ):
     """Use relation (41) to compute H^{1,m}_{n}(β) for m=1,...,n.  Using symmetry and shift of the
     indices this relation can be written as
-        b^{0}_{n+1} H^{1, m}_{n} =   \frac{b^{−m−1}_{n+1} (1−cosβ)}{2} H^{0, m+1}_{n+1}
-                                   − \frac{b^{ m−1}_{n+1} (1+cosβ)}{2} H^{0, m−1}_{n+1}
+        b^{0}_{n+1} H^{1, m}_{n} =   (b^{−m−1}_{n+1} (1−cosβ))/2 H^{0, m+1}_{n+1}
+                                   − (b^{ m−1}_{n+1} (1+cosβ))/2 H^{0, m−1}_{n+1}
                                    − a^{m}_{n} sinβ H^{0, m}_{n+1}
     """
     for n in range(1, n_max+1):
@@ -378,8 +378,8 @@ def _step_5(d, n_max, Hnmpm, Hv):
 def _step_6(n_max, Hnmpm):
     """Apply the symmetry relations below to obtain all other values H^{m',m}_{n}
     outside the computational triangle m=0,...,n, m'=−m,...,m:
-      H^{m', m}_n(\beta) = H^{m, m'}_n(\beta)
-      H^{m', m}_n(\beta) = H^{-m', -m}_n(\beta)
+      H^{m', m}_n(β) = H^{m, m'}_n(β)
+      H^{m', m}_n(β) = H^{-m', -m}_n(β)
     """
     for n in range(1, n_max+1):
         for mp in range(1, n+1):
