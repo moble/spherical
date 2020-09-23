@@ -108,7 +108,7 @@ def LM_range(ell_min, ell_max):
     return LM
 
 
-@njit('void(i8,i8,i8[:,:])')
+@njit
 def _LM_range(ell_min, ell_max, LM):
     i = 0
     for ell in range(ell_min, ell_max + 1):
