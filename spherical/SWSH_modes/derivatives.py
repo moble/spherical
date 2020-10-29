@@ -7,6 +7,7 @@
 
 import copy
 import numpy as np
+from .. import LM_total_size
 
 
 def Lsquared(self):
@@ -258,7 +259,7 @@ def Rplus(self):
     metadata['ell_min'] = min(abs(self.s-1), self.ell_min)
     metadata['ell_max'] = self.ell_max
     shape = list(self.shape)
-    shape[-1] = spherical.LM_total_size(metadata['ell_min'], metadata['ell_max'])
+    shape[-1] = LM_total_size(metadata['ell_min'], metadata['ell_max'])
     d = type(self)(np.zeros_like(self.view(np.ndarray), shape=tuple(shape)), **metadata)
     s = self.view(np.ndarray)
     o = d.view(np.ndarray)
@@ -313,7 +314,7 @@ def Rminus(self):
     metadata['ell_min'] = min(abs(self.s+1), self.ell_min)
     metadata['ell_max'] = self.ell_max
     shape = list(self.shape)
-    shape[-1] = spherical.LM_total_size(metadata['ell_min'], metadata['ell_max'])
+    shape[-1] = LM_total_size(metadata['ell_min'], metadata['ell_max'])
     d = type(self)(np.zeros_like(self.view(np.ndarray), shape=tuple(shape)), **metadata)
     s = self.view(np.ndarray)
     o = d.view(np.ndarray)
