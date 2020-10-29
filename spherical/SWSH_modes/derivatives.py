@@ -35,12 +35,9 @@ def Lsquared(self):
     """
     import numpy as np
     d = self.copy()
-    s = self.view(np.ndarray)
+    s = d.view(np.ndarray)
     for ell in range(abs(self.s), self.ell_max+1):
-        d[..., d.index(ell, -ell):d.index(ell, ell)+1] = (
-            ell * (ell+1)
-            * s[..., d.index(ell, -ell):d.index(ell, ell)+1]
-        )
+        s[..., d.index(ell, -ell):d.index(ell, ell)+1] *= ell * (ell+1)
     return d
 
 
@@ -62,10 +59,10 @@ def Lz(self):
     """
     import numpy as np
     d = self.copy()
-    s = self.view(np.ndarray)
+    s = d.view(np.ndarray)
     for ell in range(abs(self.s), self.ell_max+1):
         for m in range(-ell, ell+1):
-            d[..., d.index(ell, m)] = m * s[..., self.index(ell, m)]
+            s[..., d.index(ell, m)] *= m
     return d
 
 
@@ -103,10 +100,11 @@ def Lplus(self):
     import numpy as np
     d = np.zeros_like(self)
     s = self.view(np.ndarray)
+    o = d.view(np.ndarray)
     for ell in range(abs(self.s), self.ell_max+1):
-        d[..., self.index(ell, -ell)] = 0.0
+        o[..., self.index(ell, -ell)] = 0.0
         for m in range(-ell+1, ell+1):
-            d[..., d.index(ell, m)] = math.sqrt((ell+m)*(ell-m+1)) * s[..., self.index(ell, m-1)]
+            o[..., d.index(ell, m)] = math.sqrt((ell+m)*(ell-m+1)) * s[..., self.index(ell, m-1)]
     return d
 
 
@@ -144,10 +142,11 @@ def Lminus(self):
     import numpy as np
     d = np.zeros_like(self)
     s = self.view(np.ndarray)
+    o = d.view(np.ndarray)
     for ell in range(abs(self.s), self.ell_max+1):
         for m in range(-ell, ell):
-            d[..., self.index(ell, m)] = math.sqrt((ell-m)*(ell+m+1)) * s[..., self.index(ell, m+1)]
-        d[..., self.index(ell, ell)] = 0.0
+            o[..., self.index(ell, m)] = math.sqrt((ell-m)*(ell+m+1)) * s[..., self.index(ell, m+1)]
+        o[..., self.index(ell, ell)] = 0.0
     return d
 
 
@@ -258,11 +257,14 @@ def Rplus(self):
     metadata['spin_weight'] = self.s-1
     metadata['ell_min'] = min(abs(self.s-1), self.ell_min)
     metadata['ell_max'] = self.ell_max
-    d = type(self)(np.zeros_like(self.view(np.ndarray)), **metadata)
+    shape = list(self.shape)
+    shape[-1] = spherical.LM_total_size(metadata['ell_min'], metadata['ell_max'])
+    d = type(self)(np.zeros_like(self.view(np.ndarray), shape=tuple(shape)), **metadata)
     s = self.view(np.ndarray)
+    o = d.view(np.ndarray)
     for ell in range(max(abs(d.s), abs(self.s)), d.ell_max+1):
         if ell >= self.ell_min:
-            d[..., d.index(ell, -ell):d.index(ell, ell)+1] = (
+            o[..., d.index(ell, -ell):d.index(ell, ell)+1] = (
                 math.sqrt((ell-d.s)*(ell+d.s+1))
                 * s[..., self.index(ell, -ell):self.index(ell, ell)+1]
             )
@@ -310,11 +312,14 @@ def Rminus(self):
     metadata['spin_weight'] = self.s+1
     metadata['ell_min'] = min(abs(self.s+1), self.ell_min)
     metadata['ell_max'] = self.ell_max
-    d = type(self)(np.zeros_like(self.view(np.ndarray)), **metadata)
+    shape = list(self.shape)
+    shape[-1] = spherical.LM_total_size(metadata['ell_min'], metadata['ell_max'])
+    d = type(self)(np.zeros_like(self.view(np.ndarray), shape=tuple(shape)), **metadata)
     s = self.view(np.ndarray)
+    o = d.view(np.ndarray)
     for ell in range(max(abs(d.s), abs(self.s)), d.ell_max+1):
         if ell >= self.ell_min:
-            d[..., d.index(ell, -ell):d.index(ell, ell)+1] = (
+            o[..., d.index(ell, -ell):d.index(ell, ell)+1] = (
                 math.sqrt((ell+d.s)*(ell-d.s+1))
                 * s[..., self.index(ell, -ell):self.index(ell, ell)+1]
             )
