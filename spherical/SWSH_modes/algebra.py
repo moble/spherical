@@ -265,10 +265,12 @@ def multiply(self, other, truncator=None):
         elif self._check_broadcasting(other, reverse=True):
             return other * self
         else:
-            raise ValueError("Cannot broadcast input array to this Modes object.  Note that the input array\n           "
-                             "must broadcast to all but last dimension of this object; it is not allowed to\n           "
-                             "multiply each mode weight individually.  If you really want to hack this, view\n           "
-                             "this Modes object as an ndarray, and don't complain when your results are wrong.")
+            raise ValueError(
+                "Cannot broadcast input array to this Modes object.  Note that the input array\n           "
+                "must broadcast to all but last dimension of this object; it is not allowed to\n           "
+                "multiply each mode weight individually.  If you really want to hack this, view\n           "
+                "this Modes object as an ndarray, and don't complain when your results are wrong."
+            )
 
 
 def divide(self, other):
