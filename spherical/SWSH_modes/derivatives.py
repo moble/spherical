@@ -331,17 +331,26 @@ def Rminus(self):
 def eth(self):
     """Spin-raising derivative operator defined by Newman and Penrose
 
-    Note that this is identical to `Rminus`.
+    The operator ð was originally defined in https://dx.doi.org/10.1063/1.1931221,
+    but is more completely defined in https://dx.doi.org/10.1063/1.4962723.
 
-    By definition, the spin-raising operator satisfies [S, eth] = eth (where S is
+    See Also
+    --------
+    ethbar : Conjugate of this operator
+
+    Notes
+    -----
+    This operator is identical to `Rminus`.
+
+    By definition, the spin-raising operator satisfies [S, ð] = ð (where S is
     the spin operator, which just multiplies the function by its spin).  In terms
     of the SWSHs, we can write the action of eth as
 
-        eth {s}Y{l,m} = sqrt((l-s)(l+s+1)) {s+1}Y{l,m}
+        ð {s}Y{l,m} = sqrt((l-s)(l+s+1)) {s+1}Y{l,m}
 
     Consequently, the modes of a function are affected as
 
-        {eth f} {s,l,m} = sqrt((l+s)(l-s+1)) f{s-1,l,m}
+        {ð f} {s,l,m} = sqrt((l+s)(l-s+1)) f{s-1,l,m}
 
     """
     return self.Rminus()
@@ -351,18 +360,27 @@ def eth(self):
 def ethbar(self):
     """Spin-lowering conjugate-derivative operator defined by Newman and Penrose
 
-    Note that this is identical to `Rplus`, except with an opposite sign, to follow
+    The operator ð̄ was originally defined in https://dx.doi.org/10.1063/1.1931221,
+    but is more completely defined in https://dx.doi.org/10.1063/1.4962723.
+
+    See Also
+    --------
+    ethbar : Conjugate of this operator
+
+    Notes
+    -----
+    This operator is identical to `Rplus`, except with an opposite sign, to follow
     the conventions laid out by Newman and Penrose.
 
-    By definition, the spin-lowering operator satisfies [S, ethbar] = -ethbar
+    By definition, the spin-lowering operator satisfies [S, ð̄] = -ð̄
     (where S is the spin operator, which just multiplies the function by its spin).
     In terms of the SWSHs, we can write the action of ethbar as
 
-        ethbar {s}Y{l,m} = -sqrt((l+s)(l-s+1)) {s-1}Y{l,m}
+        ð̄ {s}Y{l,m} = -sqrt((l+s)(l-s+1)) {s-1}Y{l,m}
 
     Consequently, the modes of a function are affected as
 
-        {ethbar f} {s,l,m} = -sqrt((l-s)(l+s+1)) f{s+1,l,m}
+        {ð̄ f} {s,l,m} = -sqrt((l-s)(l+s+1)) f{s+1,l,m}
 
     """
     return -self.Rplus()
