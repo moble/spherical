@@ -19,10 +19,10 @@ def conjugate(self, inplace=False):
     c = s if inplace else np.empty_like(s)
     np.conjugate(s, out=c)
     if inplace:
-        self._metadata['spin_weight'] = -self.s
+        self._metadata['spin_weight'] = -self.spin_weight
         return self
     metadata = copy.copy(self._metadata)
-    metadata['spin_weight'] = -self.s
+    metadata['spin_weight'] = -self.spin_weight
     return type(self)(c, **metadata)
 
 
@@ -39,7 +39,7 @@ def real(self):
     This only makes sense when the function has spin weight 0; anything else will raise an error.
 
     """
-    if self.s != 0:
+    if self.spin_weight != 0:
         raise ValueError("The real part of a function with non-zero spin weight is meaningless")
     s = self.view(np.ndarray)
     c = s.real
@@ -53,7 +53,7 @@ def imag(self):
     This only makes sense when the function has spin weight 0; anything else will raise an error.
 
     """
-    if self.s != 0:
+    if self.spin_weight != 0:
         raise ValueError("The imaginary part of a function with non-zero spin weight is meaningless")
     s = self.view(np.ndarray)
     c = s.imag
@@ -69,15 +69,17 @@ def absolute(self):
 
 def add(self, other):
     if isinstance(other, type(self)):
-        s = self.s
-        if s != other.s:
-            raise ValueError(f"Cannot add functions with different spin weights ({s} and {other.s})")
+        s = self.spin_weight
+        if s != other.spin_weight:
+            raise ValueError(f"Cannot add functions with different spin weights ({s} and {other.spin_weight})")
         if self.n_theta != other.n_theta or self.n_phi != other.n_phi:
             raise ValueError(f"Shape mismatch: self.shape={self.shape}; other.shape={other.shape}")
         result = self.view(np.ndarray) + other.view(np.ndarray)
         return type(self)(result, **self._metadata)
-    elif self.s != 0 and np.any(other):
-        raise ValueError(f"It is not permitted to add non-zero scalars to a {type(self).__name__} object of non-zero spin weight")
+    elif self.spin_weight != 0 and np.any(other):
+        raise ValueError(
+            f"It is not permitted to add non-zero scalars to a {type(self).__name__} object of non-zero spin weight"
+        )
     else:
         result = self.view(np.ndarray) + other
         return type(self)(result, **self._metadata)
@@ -85,14 +87,17 @@ def add(self, other):
 
 def subtract(self, other):
     if isinstance(other, type(self)):
-        if self.s != other.s:
-            raise ValueError(f"Cannot subtract functions with different spin weights ({s} and {other.s})")
+        if self.spin_weight != other.spin_weight:
+            raise ValueError(f"Cannot subtract functions with different spin weights ({s} and {other.spin_weight})")
         if self.n_theta != other.n_theta or self.n_phi != other.n_phi:
             raise ValueError(f"Shape mismatch: self.shape={self.shape}; other.shape={other.shape}")
         result = self.view(np.ndarray) - other.view(np.ndarray)
         return type(self)(result, **self._metadata)
-    elif self.s != 0 and np.any(other):
-        raise ValueError(f"It is not permitted to subtract non-zero scalars from a {type(self).__name__} object of non-zero spin weight")
+    elif self.spin_weight != 0 and np.any(other):
+        raise ValueError(
+            f"It is not permitted to subtract non-zero scalars from a {type(self).__name__} "
+            "object of non-zero spin weight"
+        )
     else:
         result = self.view(np.ndarray) - other
         return type(self)(result, **self._metadata)
@@ -105,8 +110,8 @@ def multiply(self, other, truncator=None):
     the input.
 
     Parameters
-    ==========
-    other: Grid, array_like, complex, or float
+    ----------
+    other : Grid, array_like, complex, or float
         Grid object representing the spin-weighted functions, or an array or float which is
         equivalent to a spin-0 function.
 
@@ -115,7 +120,7 @@ def multiply(self, other, truncator=None):
         if self.n_theta != other.n_theta or self.n_phi != other.n_phi:
             raise ValueError(f"Shape mismatch: self.shape={self.shape}; other.shape={other.shape}")
         result = self.view(np.ndarray) * other.view(np.ndarray)
-        result_s = self.s + other.s
+        result_s = self.spin_weight + other.spin_weight
         metadata = copy.copy(self._metadata)
         metadata['spin_weight'] = result_s
         return type(self)(result, **metadata)
@@ -125,10 +130,13 @@ def multiply(self, other, truncator=None):
         elif self._check_broadcasting(other, reverse=True):
             return type(self)(other * self.view(np.ndarray), **self._metadata)
         else:
-            raise ValueError(f"Cannot broadcast input array to this {type(self).__name__} object.  Note that the input array\n           "
-                             "must broadcast to all but last two dimensions of this object; it is not allowed to\n           "
-                             "multiply each grid value individually.  If you really want to hack this, view this\n           "
-                             "object as an ndarray, and don't complain if your results are wrong.")
+            raise ValueError(
+                "\n"
+                f"    Cannot broadcast input array to this {type(self).__name__} object.  Note that the input array\n"
+                f"    must broadcast to all but last two dimensions of this object; it is not allowed to\n"
+                f"    multiply each grid value individually.  If you really want to hack this, view this\n"
+                f"    object as an ndarray, and don't complain if your results are wrong."
+            )
 
 
 def divide(self, other):
@@ -138,8 +146,8 @@ def divide(self, other):
     weights of the input.
 
     Parameters
-    ==========
-    other: Grid, array_like, complex, or float
+    ----------
+    other : Grid, array_like, complex, or float
         Grid object representing the spin-weighted functions, or an array or float which is
         equivalent to a spin-0 function.
 
@@ -148,7 +156,7 @@ def divide(self, other):
         if self.n_theta != other.n_theta or self.n_phi != other.n_phi:
             raise ValueError(f"Shape mismatch: self.shape={self.shape}; other.shape={other.shape}")
         result = self.view(np.ndarray) / other.view(np.ndarray)
-        result_s = self.s - other.s
+        result_s = self.spin_weight - other.spin_weight
         metadata = copy.copy(self._metadata)
         metadata['spin_weight'] = result_s
         return type(self)(result, **metadata)
@@ -156,7 +164,10 @@ def divide(self, other):
         if self._check_broadcasting(other):
             return type(self)(self.view(np.ndarray) / other, **self._metadata)
         else:
-            raise ValueError(f"Cannot broadcast input array to this {type(self).__name__} object.  Note that the input array\n           "
-                             "must broadcast to all but last two dimensions of this object; it is not allowed to\n           "
-                             "multiply each grid value individually.  If you really want to hack this, view this\n           "
-                             "object as an ndarray, and don't complain if your results are wrong.")
+            raise ValueError(
+                "\n"
+                f"    Cannot broadcast input array to this {type(self).__name__} object.  Note that the input array\n"
+                f"    must broadcast to all but last two dimensions of this object; it is not allowed to\n"
+                f"    multiply each grid value individually.  If you really want to hack this, view this\n"
+                f"    object as an ndarray, and don't complain if your results are wrong."
+            )

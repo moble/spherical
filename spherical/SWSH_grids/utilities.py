@@ -31,8 +31,8 @@ def modes(self, ell_max=None, **kwargs):
     # from .. import Modes
     # ell_max = ell_max or (max(n_phi, n_theta) - 1) // 2
     # metadata = copy.copy
-    # return Modes(spinsfast.map2salm(self.view(np.ndarray), self.s, ell_max),
-    #              spin_weight=self.s, ell_min=0, ell_max=ell_max, **metadata)
+    # return Modes(spinsfast.map2salm(self.view(np.ndarray), self.spin_weight, ell_max),
+    #              spin_weight=self.spin_weight, ell_min=0, ell_max=ell_max, **metadata)
 
 
 def _check_broadcasting(self, array, reverse=False):
