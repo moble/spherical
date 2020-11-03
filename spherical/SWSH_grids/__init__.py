@@ -116,11 +116,11 @@ class Grid(np.ndarray):
         return self.view(np.ndarray)
 
     @property
-    def s(self):
+    def spin_weight(self):
         """Spin weight of this Modes object"""
         return self._metadata['spin_weight']
 
-    spin_weight = s
+    s = spin_weight
 
     @property
     def n_theta(self):
