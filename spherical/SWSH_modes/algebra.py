@@ -44,23 +44,23 @@ def conjugate(self, inplace=False):
     """
     s = self.view(np.ndarray)
     c = s if inplace else np.zeros_like(s)
-    for ell in range(abs(self.s), self.ell_max+1):
+    for ell in range(abs(self.spin_weight), self.ell_max+1):
         i = LM_index(ell, 0, self.ell_min)
-        if self.s%2 == 0:
+        if self.spin_weight%2 == 0:
             c[..., i] = np.conjugate(s[..., i])
         else:
             c[..., i] = -np.conjugate(s[..., i])
         for m in range(1, ell+1):
             i_p, i_n = LM_index(ell, m, self.ell_min), LM_index(ell, -m, self.ell_min)
-            if (self.s+m)%2 == 0:
+            if (self.spin_weight+m)%2 == 0:
                 c[..., i_p], c[..., i_n] = np.conjugate(s[..., i_n]), np.conjugate(s[..., i_p])
             else:
                 c[..., i_p], c[..., i_n] = -np.conjugate(s[..., i_n]), -np.conjugate(s[..., i_p])
     if inplace:
-        self._metadata['spin_weight'] = -self.s
+        self._metadata['spin_weight'] = -self.spin_weight
         return self
     metadata = copy.copy(self._metadata)
-    metadata['spin_weight'] = -self.s
+    metadata['spin_weight'] = -self.spin_weight
     return type(self)(c, **metadata)
 
 
@@ -87,11 +87,11 @@ def _real_func(self, inplace=False):
         f{l, m} = (f{l, m} + (-1)**m * conjugate(f{l, -m})) / 2
 
     """
-    if self.s != 0:
+    if self.spin_weight != 0:
         raise ValueError("The real part of a function with non-zero spin weight is meaningless")
     s = self.view(np.ndarray)
     c = s if inplace else np.zeros_like(s)
-    for ell in range(abs(self.s), self.ell_max+1):
+    for ell in range(abs(self.spin_weight), self.ell_max+1):
         i = LM_index(ell, 0, self.ell_min)
         c[..., i] = np.real(s[..., i])
         for m in range(1, ell+1):
@@ -135,11 +135,11 @@ def _imag_func(self, inplace=False):
     Then, we multiply by -1j to ensure that np.imag(f.grid()) equals f.imag.grid().
 
     """
-    if self.s != 0:
+    if self.spin_weight != 0:
         raise ValueError("The imaginary part of a function with non-zero spin weight is meaningless")
     s = self.view(np.ndarray)
     c = s if inplace else np.zeros_like(s)
-    for ell in range(abs(self.s), self.ell_max+1):
+    for ell in range(abs(self.spin_weight), self.ell_max+1):
         i = LM_index(ell, 0, self.ell_min)
         c[..., i] = np.imag(s[..., i])
         for m in range(1, ell+1):
@@ -168,9 +168,11 @@ def norm(self):
 
 def add(self, other, subtraction=False):
     if isinstance(other, type(self)):
-        if self.s != other.s:
-            raise ValueError(f"Cannot add modes with different spin weights ({self.s} and {other.s})")
-        s = self.s
+        if self.spin_weight != other.spin_weight:
+            raise ValueError(
+                f"Cannot add modes with different spin weights ({self.spin_weight} and {other.spin_weight})"
+            )
+        s = self.spin_weight
         ell_min = min(self.ell_min, other.ell_min)
         ell_max = max(self.ell_max, other.ell_max)
         shape = np.broadcast(self[..., 0], other[..., 0]).shape + (LM_total_size(ell_min, ell_max),)
@@ -197,8 +199,10 @@ def add(self, other, subtraction=False):
 
 def subtract(self, other):
     if isinstance(other, type(self)):
-        if self.s != other.s:
-            raise ValueError(f"Cannot subtract modes with different spin weights ({self.s} and {other.s})")
+        if self.spin_weight != other.spin_weight:
+            raise ValueError(
+                f"Cannot subtract modes with different spin weights ({self.spin_weight} and {other.spin_weight})"
+            )
         return self.add(other, True)
     elif np.any(other):
         raise ValueError(f"It is not permitted to add nonzero scalars to a {type(self).__name__} object")
@@ -237,7 +241,7 @@ def multiply(self, other, truncator=None):
     if isinstance(other, type(self)):
         s = self.view(np.ndarray)
         o = other.view(np.ndarray)
-        new_s = self.s + other.s
+        new_s = self.spin_weight + other.spin_weight
         new_ell_min = 0
         if truncator is not None:
             new_ell_max = truncator((self.ell_max, other.ell_max))
@@ -251,8 +255,8 @@ def multiply(self, other, truncator=None):
             )
         new_shape = np.broadcast(s[..., 0], o[..., 0]).shape + (LM_total_size(new_ell_min, new_ell_max),)
         new = np.zeros(new_shape, dtype=np.complex_)
-        _multiplication_helper(s, self.ell_min, self.ell_max, self.s,
-                               o, other.ell_min, other.ell_max, other.s,
+        _multiplication_helper(s, self.ell_min, self.ell_max, self.spin_weight,
+                               o, other.ell_min, other.ell_max, other.spin_weight,
                                new, new_ell_min, new_ell_max, new_s)
         metadata = copy.copy(self._metadata)
         metadata['spin_weight'] = new_s
