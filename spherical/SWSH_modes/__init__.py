@@ -30,7 +30,7 @@ class Modes(np.ndarray):
     2) It provides additional convenience methods, like `index` to find the index of a particular
        (ell, m) mode; a `grid` method to convert modes to the SWSH values on a grid over the sphere
        (while correctly handling additional dimensions); and the various derivative operators,
-       including $\eth$ and $\bar{\eth}$.
+       including ð and ð̄.
 
     3) It overrides most of numpy's "universal functions" (ufuncs) to work appropriately for
        spin-weighted functions.  Specifically, these ufuncs are interpreted as acting on the
@@ -157,11 +157,11 @@ class Modes(np.ndarray):
         return self.view(np.ndarray)
 
     @property
-    def s(self):
+    def spin_weight(self):
         """Spin weight of this Modes object"""
         return self._metadata['spin_weight']
 
-    spin_weight = s
+    s = spin_weight
 
     @property
     def ell_min(self):

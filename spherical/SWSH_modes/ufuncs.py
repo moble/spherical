@@ -38,9 +38,9 @@ def __array_ufunc__(self, ufunc, method, *args, out=None, **kwargs):
     elif ufunc in [np.add, np.subtract]:
         if isinstance(args[0], type(self)) and isinstance(args[1], type(self)):
             m1, m2 = args[:2]
-            if m1.s != m2.s:
+            if m1.spin_weight != m2.spin_weight:
                 return NotImplemented
-            s = m1.s
+            s = m1.spin_weight
             ell_min = min(m1.ell_min, m2.ell_min)
             ell_max = max(m1.ell_max, m2.ell_max)
             shape = np.broadcast(m1[..., 0], m2[..., 0]).shape + (LM_total_size(ell_min, ell_max),)
@@ -89,7 +89,7 @@ def __array_ufunc__(self, ufunc, method, *args, out=None, **kwargs):
         if isinstance(args[0], type(self)) and isinstance(args[1], type(self)):
             s = args[0].view(np.ndarray)
             o = args[1].view(np.ndarray)
-            result_s = args[0].s + args[1].s
+            result_s = args[0].spin_weight + args[1].spin_weight
             result_ell_min = 0
             result_ell_max = max(
                 truncator((args[0].ell_max, args[1].ell_max))
@@ -104,8 +104,8 @@ def __array_ufunc__(self, ufunc, method, *args, out=None, **kwargs):
                 result = result[0]
             if isinstance(result, type(self)):
                 result = result.view(np.ndarray)
-            _multiplication_helper(s, args[0].ell_min, args[0].ell_max, args[0].s,
-                                   o, args[1].ell_min, args[1].ell_max, args[1].s,
+            _multiplication_helper(s, args[0].ell_min, args[0].ell_max, args[0].spin_weight,
+                                   o, args[1].ell_min, args[1].ell_max, args[1].spin_weight,
                                    result, result_ell_min, result_ell_max, result_s)
             metadata = copy.copy(self._metadata)
             metadata['spin_weight'] = result_s
@@ -149,20 +149,20 @@ def __array_ufunc__(self, ufunc, method, *args, out=None, **kwargs):
         if isinstance(args[0], type(self)):
             s = args[0].view(np.ndarray)
             c = np.zeros_like(s) if out is None else out[0]
-            for ell in range(abs(args[0].s), args[0].ell_max+1):
+            for ell in range(abs(args[0].spin_weight), args[0].ell_max+1):
                 i = LM_index(ell, 0, args[0].ell_min)
-                if args[0].s%2 == 0:
+                if args[0].spin_weight%2 == 0:
                     c[..., i] = np.conjugate(s[..., i])
                 else:
                     c[..., i] = -np.conjugate(s[..., i])
                 for m in range(1, ell+1):
                     i_p, i_n = LM_index(ell, m, args[0].ell_min), LM_index(ell, -m, args[0].ell_min)
-                    if (args[0].s+m)%2 == 0:
+                    if (args[0].spin_weight+m)%2 == 0:
                         c[..., i_p], c[..., i_n] = np.conjugate(s[..., i_n]), np.conjugate(s[..., i_p])
                     else:
                         c[..., i_p], c[..., i_n] = -np.conjugate(s[..., i_n]), -np.conjugate(s[..., i_p])
             metadata = copy.copy(args[0]._metadata)
-            metadata['spin_weight'] = -args[0].s
+            metadata['spin_weight'] = -args[0].spin_weight
             result = type(self)(c, **metadata)
             if out is not None and isinstance(out[0], type(self)):
                 out[0]._metadata = metadata

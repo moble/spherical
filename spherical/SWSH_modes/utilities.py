@@ -9,9 +9,9 @@
 def index(self, ell, m):
     """Return index of (ell, m) mode in data
 
-    Note that the modes are always stored in the last axis of the data, so if your Modes object
-    `modes` has (or even just might have) more than one dimension, you might extract a
-    particular mode weight with something like this:
+    Note that the modes are always stored in the last axis of the data, so if your
+    Modes object `modes` has (or even just might have) more than one dimension, you
+    might extract a particular mode weight with something like this:
 
         i = modes.index(ell, m)
         ell_m_modes = modes[..., i]
@@ -20,8 +20,8 @@ def index(self, ell, m):
 
     """
     from .. import LM_index
-    if ell < abs(self.s) or ell < abs(m):
-        raise ValueError(f"Bad index (ell, m)=({ell}, {m}) for spin weight s={self.s}")
+    if ell < abs(self.spin_weight) or ell < abs(m):
+        raise ValueError(f"Bad index (ell, m)=({ell}, {m}) for spin weight s={self.spin_weight}")
     if ell < self.ell_min or ell > self.ell_max:
         raise ValueError(f"Requested ell index {ell} outside bounds of this data ({self.ell_min, self.ell_max})")
     return LM_index(ell, m, self.ell_min)
@@ -30,8 +30,8 @@ def index(self, ell, m):
 def truncate_ell(self, new_ell_max):
     """Slice array so that new ell max is no more than the given value
 
-    Note that the result's maximum ell value is limited by the current maximum.  If the input is
-    larger than that, the object is returned unchanged.
+    Note that the result's maximum ell value is limited by the current maximum.  If
+    the input is larger than that, the object is returned unchanged.
 
     """
     if new_ell_max >= self.ell_max:
@@ -81,7 +81,7 @@ def grid(self, n_theta=None, n_phi=None, **kwargs):
     # metadata = copy.copy(self._metadata)
     # metadata.pop('ell_max', None)
     # metadata.update(**kwargs)
-    # return Grid(spinsfast.salm2map(self.view(np.ndarray), self.s, self.ell_max, n_theta, n_phi), **metadata)
+    # return Grid(spinsfast.salm2map(self.view(np.ndarray), self.spin_weight, self.ell_max, n_theta, n_phi), **metadata)
 
 
 def evaluate(self, rotors, **kwargs):
