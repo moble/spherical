@@ -4,47 +4,91 @@
 """
 
 import numpy as np
-from .. import jit
+import quaternionic
+
+from .. import jit, LM_index
+from ..recursions import complex_powers
+from ..recursions.wignerH2 import wedge_index, HCalculator
 
 one_over_4pi = 1.0 / (4 * np.pi)
 
+@jit
+def ϵ(m):
+    if m <= 0:
+        return 1
+    elif m%2:
+        return -1
+    else:
+        return 1
+
+
+#  Compute f = Σₗₘ fₗₘ ₛYₗₘ = Σₗₘ fₗₘ (-1)ˢ √(2ℓ+1)/(4π) 𝔇ˡₘ,₋ₛ(R), where f is a
+#  (possibly spin-weighted) function, fₗₘ are its mode weights in the current
+#  frame, s is the spin weight, and f is the function value at R.
+#
+#    f = Σₗₘ fₗₘ ₛYₗₘ
+#      = Σₗₘ fₗₘ (-1)ˢ √(2ℓ+1)/(4π) 𝔇ˡₘ,₋ₛ(R)
+#      = Σₗₘ fₗₘ (-1)ˢ √(2ℓ+1)/(4π) dˡₘ₋ₛ(R) exp[iϕₐ(-s-m)+iϕₛ(-s+m)]
+#      = Σₗₘ fₗₘ (-1)ˢ √(2ℓ+1)/(4π) dˡₘ₋ₛ(R) exp[-i(ϕₛ+ϕₐ)s+i(ϕₛ-ϕₐ)m]
+#      = (-1)ˢ Σₗ √(2ℓ+1)/(4π) exp[-i(ϕₛ+ϕₐ)s] Σₘ fₗₘ dˡₘ₋ₛ(R) exp[i(ϕₛ-ϕₐ)m]
+#      = (-1)ˢ zₚ⁻ˢ Σₗ √(2ℓ+1)/(4π) Σₘ fₗₘ dˡₘ₋ₛ(R) zₘᵐ
+#      = (-1)ˢ zₚ⁻ˢ Σₗ √(2ℓ+1)/(4π) {fₗ₀ dˡ₀₋ₛ(R) + Σₚₘ [fₗₘ dˡₘ₋ₛ(R) zₘᵐ + fₗ₋ₘ dˡ₋ₘ₋ₛ(R) / zₘᵐ]}
+#      = (-1)ˢ zₚ⁻ˢ Σₗ √(2ℓ+1)/(4π) {fₗ₀ ϵₛ Hˡ₀₋ₛ(R) + Σₚₘ [fₗₘ ϵₘ ϵₛ Hˡₘ₋ₛ(R) zₘᵐ + fₗ₋ₘ ϵ₋ₘ ϵₛ Hˡ₋ₘ₋ₛ(R) / zₘᵐ]}
+#      = (-1)ˢ ϵₛ zₚ⁻ˢ Σₗ √(2ℓ+1)/(4π) {fₗ₀ Hˡ₀₋ₛ(R) + Σₚₘ [fₗₘ (-1)ᵐ Hˡₘ₋ₛ(R) zₘᵐ + fₗ₋ₘ Hˡ₋ₘ₋ₛ(R) / zₘᵐ]}
+#
+#     # Σₙ fₗₙ 𝔇ˡₙₘ(R) = ϵ₋ₘ zₚᵐ {fₗ₀ Hˡ₀ₘ(R) + Σₚₙ [fₗₙ (-1)ⁿ Hˡₙₘ(R) zₘⁿ + fₗ₋ₙ Hˡ₋ₙₘ(R) / zₘⁿ]}
 
 def evaluate(modes, R):
+    """Evaluate Modes object as function of rotations
+
+    Parameters
+    ----------
+    modes : Modes object
+    R : quaternionic.array
+        Arbitrarily shaped array of quaternions.  All modes in the input will be
+        evaluated on each of these quaternions.  Note that it is fairly standard to
+        construct these quaternions from spherical coordinates, as with the
+        function `quaternionic.array.from_spherical_coordinates`.
+
+    Returns
+    -------
+    f : array_like
+        This array holds the complex function values.  Its shape is
+        modes.shape[:-1]+R.shape[:-1].
+
+    """
     spin_weight = modes.spin_weight
     ell_min = modes.ell_min
     ell_max = modes.ell_max
-    
+
     # Reinterpret inputs as 2-d np.arrays
     mode_weights = modes.ndarray.reshape((-1, modes.shape[-1]))
     quaternions = R.ndarray.reshape((-1, 4))
-    
+
     # Prepare to compute Wigner elements (H is roughly Wigner's d function with nicer properties)
-    H = spherical.recursions.HCalculator(ell_max)#, abs(spin_weight))
+    H = HCalculator(ell_max)#, abs(spin_weight))
 
     # Construct storage space
     workspace = H.workspace([1.0])
-    # print(workspace.shape)
     z = np.empty(3, dtype=complex)
     function_values = np.zeros(mode_weights.shape[:-1] + quaternions.shape[:-1], dtype=complex)
-    
+
     # Loop over all input quaternions
     for i_R in range(quaternions.shape[0]):
         # Compute phases exp(iα), exp(iβ), exp(iγ) from quaternion, storing in z
-        _quaternion_phases(quaternions[i_R], z)
+        quaternionic.converters._to_euler_phases(quaternions[i_R], z)
 
         # Compute all integer powers zαᵏ for k ∈ [0, ell_max]
         zαpowers = complex_powers(z[0], ell_max)
-        # print("zαpowers", np.any(np.isnan(zαpowers)))
 
         # Compute Wigner H elements for this quaternion
         Hwedge = H(z[1].real, z[1].imag, workspace)[:, 0]
-        # print(Hwedge.shape, Hwedge.dtype)
-        # print("Hwedge", np.any(np.isnan(Hwedge)))
-        # print(f"mode_weights", np.any(np.isnan(mode_weights)))
 
+        # print(z)
         _evaluate(mode_weights, function_values[:, i_R], spin_weight, ell_min, ell_max, abs(spin_weight), Hwedge, zαpowers, z[2])
-        
+
     return function_values.reshape(modes.shape[:-1] + R.shape[:-1])
+
 
 @jit
 def _evaluate(mode_weights, function_values, spin_weight, ell_min, ell_max, mp_max, Hwedge, zαpowers, zγ):
@@ -55,7 +99,7 @@ def _evaluate(mode_weights, function_values, spin_weight, ell_min, ell_max, mp_m
     for i_modes in range(mode_weights.shape[0]):
         f = function_values[i_modes:i_modes+1]
         fₗₘ = mode_weights[i_modes]
-        
+
         ### TODO:
         # 0. Use newer H with narrow wedges (mp_max)
         # 1. Reduce LM_index uses to 1, and then index relative to that one
