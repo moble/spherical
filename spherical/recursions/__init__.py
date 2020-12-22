@@ -19,8 +19,9 @@ def quaternion_angles(R):
         zₚ ≔ exp[i(α+γ)/2]
         zₘ ≔ exp[i(α-γ)/2]
 
-    It so happens that these combinations can be calculated algebraically from components of a
-    quaternion, and are important terms in computing Wigner's 𝔇 matrices.
+    It so happens that these combinations can be calculated algebraically from
+    components of a quaternion, and are important terms in computing Wigner's 𝔇
+    matrices.
 
     """
     a = R[0]**2 + R[3]**2
@@ -28,8 +29,14 @@ def quaternion_angles(R):
     sqrta = np.sqrt(a)
     sqrtb = np.sqrt(b)
     zᵦ = ((a - b) + 2j * sqrta * sqrtb) / (a + b)  # exp[iβ]
-    zₚ = (R[0] + 1j * R[3]) / sqrta  # exp[i(α+γ)/2]
-    zₘ = (R[2] - 1j * R[1]) / sqrtb  # exp[i(α-γ)/2]
+    if sqrta > 0.0:
+        zₚ = (R[0] + 1j * R[3]) / sqrta  # exp[i(α+γ)/2]
+    else:
+        zₚ = 1.0 + 0.0j
+    if abs(sqrtb) > 0.0:
+        zₘ = (R[2] - 1j * R[1]) / sqrtb  # exp[i(α-γ)/2]
+    else:
+        zₘ = 1.0 +0.0j
     return zᵦ, zₚ, zₘ
 
 
@@ -40,13 +47,13 @@ def rotate(modes, R):
     weights in the current frame, and fₗₘ are its mode weights in the rotated frame.
 
     fₗₘ = Σₙ fₗₙ 𝔇ˡₙₘ(R)
-         = Σₙ fₗₙ dˡₙₘ(R) exp[iϕₐ(m-n)+iϕₛ(m+n)]
-         = Σₙ fₗₙ dˡₙₘ(R) exp[i(ϕₛ+ϕₐ)m+i(ϕₛ-ϕₐ)n]
-         = exp[i(ϕₛ+ϕₐ)m] Σₙ fₗₙ dˡₙₘ(R) exp[i(ϕₛ-ϕₐ)n]
-         = zₚᵐ Σₙ fₗₙ dˡₙₘ(R) zₘⁿ
-         = zₚᵐ {fₗ₀ dˡ₀ₘ(R) + Σₚₙ [fₗₙ dˡₙₘ(R) zₘⁿ + fₗ₋ₙ dˡ₋ₙₘ(R) / zₘⁿ]}
-         = zₚᵐ {fₗ₀ ϵ₋ₘ Hˡ₀ₘ(R) + Σₚₙ [fₗₙ ϵₙ ϵ₋ₘ Hˡₙₘ(R) zₘⁿ + fₗ₋ₙ ϵ₋ₙ ϵ₋ₘ Hˡ₋ₙₘ(R) / zₘⁿ]}
-         = ϵ₋ₘ zₚᵐ {fₗ₀ Hˡ₀ₘ(R) + Σₚₙ [fₗₙ (-1)ⁿ Hˡₙₘ(R) zₘⁿ + fₗ₋ₙ Hˡ₋ₙₘ(R) / zₘⁿ]}
+        = Σₙ fₗₙ dˡₙₘ(R) exp[iϕₐ(m-n)+iϕₛ(m+n)]
+        = Σₙ fₗₙ dˡₙₘ(R) exp[i(ϕₛ+ϕₐ)m+i(ϕₛ-ϕₐ)n]
+        = exp[i(ϕₛ+ϕₐ)m] Σₙ fₗₙ dˡₙₘ(R) exp[i(ϕₛ-ϕₐ)n]
+        = zₚᵐ Σₙ fₗₙ dˡₙₘ(R) zₘⁿ
+        = zₚᵐ {fₗ₀ dˡ₀ₘ(R) + Σₚₙ [fₗₙ dˡₙₘ(R) zₘⁿ + fₗ₋ₙ dˡ₋ₙₘ(R) / zₘⁿ]}
+        = zₚᵐ {fₗ₀ ϵ₋ₘ Hˡ₀ₘ(R) + Σₚₙ [fₗₙ ϵₙ ϵ₋ₘ Hˡₙₘ(R) zₘⁿ + fₗ₋ₙ ϵ₋ₙ ϵ₋ₘ Hˡ₋ₙₘ(R) / zₘⁿ]}
+        = ϵ₋ₘ zₚᵐ {fₗ₀ Hˡ₀ₘ(R) + Σₚₙ [fₗₙ (-1)ⁿ Hˡₙₘ(R) zₘⁿ + fₗ₋ₙ Hˡ₋ₙₘ(R) / zₘⁿ]}
 
     Here, n ranges over [-l, l] and pn ranges over [1, l].
 

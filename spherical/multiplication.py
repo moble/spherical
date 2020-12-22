@@ -38,26 +38,44 @@ def _multiplication_helper(f, ellmin_f, ellmax_f, s_f,
 def multiply(f, ellmin_f, ellmax_f, s_f, g, ellmin_g, ellmax_g, s_g):
     """Return modes of the decomposition of f*g
 
-    s1Yl1m1 * s2Yl2m2 = sum([
-        s3Yl3m3.conjugate() * (-1)**(l1+l2+l3) * sqrt((2*l1+1)*(2*l2+1)*(2*l3+1)/(4*pi))
-            * Wigner3j(l1, l2, l3, s1, s2, s3) * Wigner3j(l1, l2, l3, m1, m2, m3)
-        for l3 in range(abs(l1-l2), l1+l2+1)
-    ])
+    We can multiply SWSHs as
+
+      s1Yl1m1 * s2Yl2m2 = sum([
+          s3Yl3m3.conjugate() * (-1)**(l1+l2+l3) * sqrt((2*l1+1)*(2*l2+1)*(2*l3+1)/(4*pi))
+              * Wigner3j(l1, l2, l3, s1, s2, s3) * Wigner3j(l1, l2, l3, m1, m2, m3)
+          for l3 in range(abs(l1-l2), l1+l2+1)
+      ])
 
     Here, s3 = -s1 - s2 and m3 = -m1 - m2.
 
-    For general f and g with random ellmin/max and m:
-    f*g = sum([ sqrt(3*(2*l1+1)/4*pi)*f(l1,m1)
-               sum([ sqrt(2*l2+1)*g(l2,m2)
-                    sum([ s3Yl3m3.conjugate()*sqrt(2*l3+1)*(-1)**(l1+l2+l3)
-                          *Wigner3j(l1, l2, l3, s1, s2, s3) * Wigner3j(l1, l2, l3, m1, m2, m3)
-                    for l3 in range(abs(l1-l2), l1+l2+1)
-                    ])
-               for l2,m2 in range(ellmin_g, ellmax_g)
-               ])
-          for l1,m1 in range(ellmin_f, ellmax_f)
-          ])
-    for same s3,m3 as above
+    For general f and g, we have
+
+      f * g = (
+          sum([f(l1, m1) * s1Yl1m1 for l1,m1 in lmrange(ellmin_f, ellmax_f)])
+          * sum([g(l2, m2) * s2Yl2m2 for l2,m2 in lmrange(ellmin_g, ellmax_g)])
+      )
+      = sum([f(l1, m1) * g(l2, m2) * s1Yl1m1 * s2Yl2m2 for l2,m2 in lmrange(ellmin_g, ellmax_g) for l1,m1 in lmrange(ellmin_f, ellmax_f)])
+      = sum([
+          f(l1, m1) * g(l2, m2) *
+          s3Yl3m3.conjugate() * (-1)**(l1+l2+l3) * sqrt((2*l1+1)*(2*l2+1)*(2*l3+1)/(4*pi))
+              * Wigner3j(l1, l2, l3, s1, s2, s3) * Wigner3j(l1, l2, l3, m1, m2, m3)
+          for l2,m2 in lmrange(ellmin_g, ellmax_g) for l1,m1 in lmrange(ellmin_f, ellmax_f)
+          for l3 in range(abs(l1-l2), l1+l2+1)
+      ])
+      = sum([f(lf, mf) * g(lg, mg) *
+          sfgYlfgmfg * (-1)**(lf+lg+lfg+sfg+mfg) * sqrt((2*lf+1)*(2*lg+1)*(2*lfg+1)/(4*pi))
+              * Wigner3j(lf, lg, lfg, sf, sg, -sfg) * Wigner3j(lf, lg, lfg, mf, mg, -mfg)
+          for lg,mg in lmrange(ellmin_g, ellmax_g) for lf,mf in lmrange(ellmin_f, ellmax_f)
+          for lfg in range(abs(lf-lg), lf+lg+1) for mfg in [mf + mg]
+      ])
+
+    Thus, the mode decomposition of the product fg = f * g is
+
+      fg(l, m) = sum([f(lf, mf) * g(lg, mg) *
+          (-1)**(lf+lg+l+sf+sg+mf+mg) * sqrt((2*lf+1)*(2*lg+1)*(2*lfg+1)/(4*pi))
+              * Wigner3j(lf, lg, l, sf, sg, -sf-sg) * Wigner3j(lf, lg, l, mf, mg, -mf-mg)
+          for lg,mg in lmrange(ellmin_g, ellmax_g) for lf,mf in lmrange(ellmin_f, ellmax_f)
+      ])
 
 
     Parameters
@@ -78,9 +96,9 @@ def multiply(f, ellmin_f, ellmax_f, s_f, g, ellmin_g, ellmax_g, s_g):
         As above, but for the second function
     ellmin_g: int
         As above, but for the second function
-    ellmax_f: int
+    ellmax_g: int
         As above, but for the second function
-    s_f: int
+    s_g: int
         As above, but for the second function
 
     Returns
