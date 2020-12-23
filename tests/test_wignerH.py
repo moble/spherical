@@ -110,3 +110,19 @@ def test_wigner_d():
     d0 = np.array([sf.Wigner_D_matrices(Ri, 0, ell_max) for Ri in R]).T
     d1 = HCalculator(ell_max).wigner_d(np.cos(β))
     assert np.max(np.abs(d1-d0)) < 4e3 * eps
+
+
+def test_wigner_D():
+    import quaternionic
+    ell_max = 17
+    H = HCalculator(ell_max)
+    for i in range(50):
+        R = quaternionic.array(np.random.rand(4)).normalized
+        d0 = sf.Wigner_D_matrices(R, 0, ell_max).T
+        d1 = H.wigner_D(R)
+        if np.max(np.abs(d1-d0)) >= 1e4 * eps:
+            print()
+            print(i)
+            print("d0 =", d0.tolist())
+            print("d1 =", d1.tolist())
+        assert np.max(np.abs(d1-d0)) < 1e4 * eps

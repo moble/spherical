@@ -24,11 +24,12 @@ elements.
 
 """
 
-import numpy as np
 from functools import lru_cache
+import numpy as np
 from scipy.special import factorial
-import sympy
 
+import quaternionic
+from . import complex_powers
 from .. import jit, LMpM_total_size, LMpM_index
 
 sqrt3 = np.sqrt(3)
@@ -251,8 +252,6 @@ def _step_2(g, h, n_max, mp_max, Hwedge, Hextra, Hv, cosβ, sinβ):
             hi = h[nn_index-i]
             for j in range(H.shape[1]):
                 H[n0n_index-i, j] = gi * cosβ[j] * H[n0n_index-i+1, j] - hi * sinβ[j]**2 * H[n0n_index-i+2, j]
-        # if n==2:
-        #     print("args2 =", (g, h, n_max, Hwedge, Hextra, Hv, cosβ, sinβ))
         # m = 0, with normalization
         const = 1.0 / np.sqrt(4*n+2)
         gi = g[nn_index-n]
@@ -360,8 +359,6 @@ def _step_4(d, n_max, mp_max, Hwedge, Hv):
                         - d7 * Hwedge[i+i3, j]
                         + d8 * Hwedge[i+i4, j]
                     )
-            # if n == 2 and mp == 1:
-            #     print("args2 =", (d, n_max, Hwedge, Hv, i1, i2, i3, i4))
             # m = n
             for i in [n-mp]:
                 for j in range(Hwedge.shape[1]):
@@ -497,11 +494,67 @@ class HCalculator(object):
             raise ValueError("Found a non-finite value inside this object")
 
     def workspace(self, cosβ=[1.0]):
-        """Return a new workspace sized for cosβ."""
+        """Return a new workspace sized for cosβ.
+
+        Note that the particular values of cosβ do not matter at all; only the shape of
+        the array is used.  The returned array may be used repeatedly when calling this
+        object, and will be used as a work space.  This is obviously not thread-safe.
+
+        """
         cosβ = np.asarray(cosβ, dtype=float)
         return np.zeros((self.wedge_size+(self.n_max+1)**2+self.n_max+2,) + cosβ.shape, dtype=float)
 
     def __call__(self, cosβ, sinβ=None, workspace=None):
+        """Compute a quarter of the H matrix
+
+        Parameters
+        ----------
+        cosβ : array_like
+            Values of cos(β) on which to evaluate the d matrix.
+        sinβ : array_like, optional
+            Values of sin(β) corresponding to the above.  If not given, this will be
+            computed automatically.
+        workspace : array_like, optional
+            A working array like the one returned by HCalculator.workspace for the
+            input cosβ.  If not present, a workspace will be created automatically.
+
+        Returns
+        -------
+        Hwedge : array
+            This is a 1-dimensional array of floats; see below.
+
+        See Also
+        --------
+        wigner_d : Compute the full Wigner d matrix
+        wigner_D : Compute the full Wigner 𝔇 matrix
+        rotate : Avoid computing the full 𝔇 matrix and rotate modes directly
+        evaluate : Avoid computing the full 𝔇 matrix and evaluate modes directly
+
+        Notes
+        -----
+        H is related to Wigner's (small) d via
+
+            dₗⁿᵐ = ϵₙ ϵ₋ₘ Hₗⁿᵐ,
+
+        where
+
+                 ⎧ 1 for k≤0
+            ϵₖ = ⎨
+                 ⎩ (-1)ᵏ for k>0
+
+        H has various advantages over d, including the fact that it can be efficiently
+        and robustly valculated via recurrence relations, and the following symmetry
+        relations:
+
+            H^{m', m}_n(β) = H^{m, m'}_n(β)
+            H^{m', m}_n(β) = H^{-m', -m}_n(β)
+            H^{m', m}_n(β) = (-1)^{n+m+m'} H^{-m', m}_n(π - β)
+            H^{m', m}_n(β) = (-1)^{m+m'} H^{m', m}_n(-β)
+
+        Because of these symmetries, we only need to evaluate at most 1/4 of all the
+        elements.
+
+        """
         cosβ = np.asarray(cosβ, dtype=float)
         if np.max(cosβ) > 1.0 or np.min(cosβ) < -1.0:
             raise ValueError('Nonsensical value for range of cosβ: [{0}, {1}]'.format(np.min(cosβ), np.max(cosβ)))
@@ -528,15 +581,146 @@ class HCalculator(object):
         return Hwedge
 
     def wigner_d(self, cosβ, sinβ=None, workspace=None):
-        """Return Wigner's d matrix"""
+        """Compute Wigner's d matrix dˡₘₚ,ₘ(β)
+
+        Parameters
+        ----------
+        cosβ : array_like
+            Values of cos(β) on which to evaluate the d matrix.
+        sinβ : array_like, optional
+            Values of sin(β) corresponding to the above.  If not given, this will be
+            computed automatically.
+        workspace : array_like, optional
+            A working array like the one returned by HCalculator.workspace for the
+            input cosβ.  If not present, a workspace will be created automatically.
+
+        Returns
+        -------
+        d : array
+            This is a 1-dimensional array of floats; see below.
+
+        See Also
+        --------
+        __call__ : Compute a portion of the H matrix
+        wigner_D : Compute the full Wigner 𝔇 matrix
+        rotate : Avoid computing the full 𝔇 matrix and rotate modes directly
+        evaluate : Avoid computing the full 𝔇 matrix and evaluate modes directly
+
+        Notes
+        -----
+        This function is the preferred method of computing the d matrix for large ell
+        values.  In particular, above ell≈32 standard formulas become completely
+        unusable because of numerical instabilities and overflow.  This function uses
+        stable recursion methods instead, and should be usable beyond ell≈1000.
+
+        The result is returned in a 1-dimensional array ordered as
+
+            [
+                d(ell, mp, m, β)
+                for ell in range(ell_max+1)
+                for mp in range(-ell, ell+1)
+                for m in range(-ell, ell+1)
+            ]
+
+        """
+        cosβ = np.asarray(cosβ, dtype=float)
         ell_min = 0
         ell_max = self.n_max
         Hwedge = self(cosβ, sinβ, workspace)
         d = np.empty((LMpM_total_size(ell_min, ell_max),) + cosβ.shape)
-        for ell in range(ell_min, ell_max+1):
-            for mp in range(-ell, ell+1):
-                for m in range(-ell, ell+1):
-                    i_d = LMpM_index(ell, mp, m, ell_min)
-                    i_H = wedge_index(ell, mp, m, self.mp_max)
-                    d[i_d] = ϵ(mp) * ϵ(-m) * Hwedge[i_H]
+        _fill_wigner_d(ell_min, ell_max, self.mp_max, d, Hwedge)
         return d
+
+    def wigner_D(self, R, workspace=None):
+        """Compute Wigner's 𝔇 matrix
+
+        Parameters
+        ----------
+        R : array_like
+            Array to be interpreted as a quaternionic array (thus its final dimension
+            must have size 4), representing the rotations on which the 𝔇 matrix will be
+            evaluated.
+        workspace : array_like, optional
+            A working array like the one returned by HCalculator.workspace.  If not
+            present, a workspace will be created automatically.
+
+        Returns
+        -------
+        d : array
+            This is a 1-dimensional array of floats; see below.
+
+        See Also
+        --------
+        __call__ : Compute a portion of the H matrix
+        wigner_D : Compute the full Wigner 𝔇 matrix
+        rotate : Avoid computing the full 𝔇 matrix and rotate modes directly
+        evaluate : Avoid computing the full 𝔇 matrix and evaluate modes directly
+
+        Notes
+        -----
+        This function is the preferred method of computing the d matrix for large ell
+        values.  In particular, above ell≈32 standard formulas become completely
+        unusable because of numerical instabilities and overflow.  This function uses
+        stable recursion methods instead, and should be usable beyond ell≈1000.
+
+        This function computes 𝔇ˡₘₚ,ₘ(R).  The result is returned in a 1-dimensional
+        array ordered as
+
+            [
+                𝔇(ell, mp, m, R)
+                for ell in range(ell_max+1)
+                for mp in range(-ell, ell+1)
+                for m in range(-ell, ell+1)
+            ]
+
+        """
+        R = quaternionic.array(R)
+        z = R.to_euler_phases
+        ell_min = 0
+        ell_max = self.n_max
+        Hwedge = self(z[1].real, z[1].imag, workspace)
+        𝔇 = np.empty((LMpM_total_size(ell_min, ell_max),) + R.shape[:-1], dtype=complex)
+        zₐpowers = complex_powers(z[0], ell_max)
+        zᵧpowers = complex_powers(z[2], ell_max)
+        _fill_wigner_D(ell_min, ell_max, self.mp_max, 𝔇, Hwedge[:, 0], zₐpowers, zᵧpowers)
+        return 𝔇
+
+
+@jit
+def _fill_wigner_d(ell_min, ell_max, mp_max, d, Hwedge):
+    """Helper function for HCalculator.wigner_d"""
+    for ell in range(ell_min, ell_max+1):
+        for mp in range(-ell, ell+1):
+            for m in range(-ell, ell+1):
+                i_d = LMpM_index(ell, mp, m, ell_min)
+                i_H = wedge_index(ell, mp, m, mp_max)
+                d[i_d] = ϵ(mp) * ϵ(-m) * Hwedge[i_H]
+
+
+@jit
+def _fill_wigner_D(ell_min, ell_max, mp_max, 𝔇, Hwedge, zₐpowers, zᵧpowers):
+    """Helper function for HCalculator.wigner_D"""
+    # 𝔇ˡₘₚ,ₘ(R) = dˡₘₚ,ₘ(R) exp[iϕₐ(m-mp)+iϕₛ(m+mp)] = dˡₘₚ,ₘ(R) exp[i(ϕₛ+ϕₐ)m+i(ϕₛ-ϕₐ)mp]
+    # exp[iϕₛ] = R̂ₛ = hat(R[0] + 1j * R[3]) = zp
+    # exp[iϕₐ] = R̂ₐ = hat(R[2] + 1j * R[1]) = zm.conjugate()
+    # exp[i(ϕₛ+ϕₐ)] = zp * zm.conjugate() = z[2] = zᵧ
+    # exp[i(ϕₛ-ϕₐ)] = zp * zm = z[0] = zₐ
+    for ell in range(ell_min, ell_max+1):
+        for mp in range(-ell, 0):
+            for m in range(-ell, 0):
+                i_D = LMpM_index(ell, mp, m, ell_min)
+                i_H = wedge_index(ell, mp, m, mp_max)
+                𝔇[i_D] = ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[-m].conjugate() * zₐpowers[-mp].conjugate()
+            for m in range(0, ell+1):
+                i_D = LMpM_index(ell, mp, m, ell_min)
+                i_H = wedge_index(ell, mp, m, mp_max)
+                𝔇[i_D] = ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[m] * zₐpowers[-mp].conjugate()
+        for mp in range(0, ell+1):
+            for m in range(-ell, 0):
+                i_D = LMpM_index(ell, mp, m, ell_min)
+                i_H = wedge_index(ell, mp, m, mp_max)
+                𝔇[i_D] = ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[-m].conjugate() * zₐpowers[mp]
+            for m in range(0, ell+1):
+                i_D = LMpM_index(ell, mp, m, ell_min)
+                i_H = wedge_index(ell, mp, m, mp_max)
+                𝔇[i_D] = ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[m] * zₐpowers[mp]

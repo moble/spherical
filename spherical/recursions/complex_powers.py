@@ -7,20 +7,6 @@ from .. import jit
 def complex_powers(z, M, zpowers=None):
     """Compute integer powers of z=exp(iθ) recursively
 
-    This algorithm is due to Stoer and Bulirsch in "Introduction to Numerical
-    Analysis" (page 24) — with a little help from de Moivre's formula, which is
-    essentially exp(iθ)ⁿ = exp(inθ), as well as my own alterations to deal with
-    different behaviors in different quadrants.
-
-    There isn't usually a huge advantage to using this specialized function.  If
-    you just need a particular power, it will generally be far more efficient and
-    just as accurate to compute either exp(iθ)ⁿ or exp(inθ) explicitly.  However,
-    if you need all powers from 0 to M, this function is about 10 or 5 times faster
-    than those options, respectively.  Like those options, this function is
-    numerically stable, in the sense that its errors are usually smaller than the
-    error from machine-precision errors in the input argument — or at worst about
-    30% larger, around π/2.
-
     Parameters
     ----------
     z : complex
@@ -38,6 +24,22 @@ def complex_powers(z, M, zpowers=None):
     zpowers : array of complex
         Powers z⁰, z¹, ..., zᴹ.  The last dimension has size M+1, any preceding
         dimensions are the same as the input `z` array.
+
+    Notes
+    -----
+    This algorithm is mostly due to Stoer and Bulirsch in "Introduction to
+    Numerical Analysis" (page 24) — with a little help from de Moivre's formula,
+    which is essentially exp(iθ)ⁿ = exp(inθ), as well as my own alterations to deal
+    with different behaviors in different quadrants.
+
+    There isn't usually a huge advantage to using this specialized function.  If
+    you just need a particular power, it will generally be far more efficient and
+    just as accurate to compute either exp(iθ)ⁿ or exp(inθ) explicitly.  However,
+    if you need all powers from 0 to M, this function is about 10 or 5 times faster
+    than those options, respectively.  Like those options, this function is
+    numerically stable, in the sense that its errors are usually smaller than the
+    error from machine-precision errors in the input argument — or at worst about
+    30% larger, around π/2.
 
     """
     z = np.asarray(z, dtype=complex)
