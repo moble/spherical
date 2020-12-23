@@ -13,7 +13,7 @@ slow = pytest.mark.slow
 eps = np.finfo(float).eps
 
 
-from spherical.recursions.wignerH2 import *
+from spherical.recursions.wignerH import *
 
 
 def test_wedge_size():
@@ -108,5 +108,5 @@ def test_wigner_d():
     β = np.linspace(0, np.pi)
     R = quaternionic.array.from_spherical_coordinates(β, 0)
     d0 = np.array([sf.Wigner_D_matrices(Ri, 0, ell_max) for Ri in R]).T
-    d1 = sf.recursions.wignerH2.HCalculator(ell_max).wigner_d(np.cos(β))
+    d1 = HCalculator(ell_max).wigner_d(np.cos(β))
     assert np.max(np.abs(d1-d0)) < 4e3 * eps

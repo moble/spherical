@@ -8,18 +8,9 @@ import quaternionic
 
 from .. import jit, LM_index
 from ..recursions import complex_powers
-from ..recursions.wignerH2 import wedge_index, HCalculator
+from ..recursions.wignerH import wedge_index, HCalculator, ϵ
 
 one_over_4pi = 1.0 / (4 * np.pi)
-
-@jit
-def ϵ(m):
-    if m <= 0:
-        return 1
-    elif m%2:
-        return -1
-    else:
-        return 1
 
 
 #  Compute f = Σₗₘ fₗₘ ₛYₗₘ = Σₗₘ fₗₘ (-1)ˢ √(2ℓ+1)/(4π) 𝔇ˡₘ,₋ₛ(R), where f is a
