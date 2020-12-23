@@ -657,3 +657,32 @@ def test_modes_ufuncs():
         #     ell_max2 = 8
         #     a2 = np.random.rand(3, 7, sf.LM_total_size(ell_min2, ell_max2)*2).view(complex)
         #     m2 = sf.Modes(a2, spin_weight=s2, ell_min=ell_min2, ell_max=ell_max2)
+
+
+def test_evaluate():
+    import numpy as np
+    import quaternionic
+    import spherical
+    ell_max = 8
+    n_theta = n_phi = 2 * ell_max + 1
+    rotors = quaternionic.array.from_spherical_coordinates(spherical.theta_phi(n_theta, n_phi))
+    # rotors = quaternionic.array(np.random.rand(17, 4)).normalized
+    for s in [0]:#range(-2, 2 + 1):
+        ell_min = abs(s)
+        a1 = np.zeros(sf.LM_total_size(ell_min, ell_max), dtype=complex)
+        a1[sf.LM_index(2, 0, ell_min)] = 1.0
+        # test_ell_max = 1
+        # a1[:sf.LM_index(test_ell_max+1, -(test_ell_max+1), ell_min)] = np.random.rand(sf.LM_total_size(ell_min, test_ell_max)*2).view(complex)
+        # a1 = np.random.rand(11, sf.LM_total_size(ell_min, ell_max)*2).view(complex)
+        m1 = sf.Modes(a1, spin_weight=s, ell_min=ell_min, ell_max=ell_max)
+        f1 = m1.evaluate(rotors)
+        assert f1.shape == m1.shape[:-1] + rotors.shape[:-1]
+        f2 = spherical.SWSH_modes.evaluate.evaluate(m1, rotors)
+        assert f2.shape == m1.shape[:-1] + rotors.shape[:-1]
+        # print()
+        # print("f1 = ", (f1).tolist())
+        # print()
+        # print("f2 = ", (f2).tolist())
+        # print()
+        # print("f1 / f2 = ", (f1 / f2).tolist())
+        assert np.allclose(f1, f2, rtol=1e-8, atol=1e-8)

@@ -14,10 +14,10 @@ H has various advantages over d, including the fact that it can be efficiently
 and robustly valculated via recurrence relations, and the following symmetry
 relations:
 
-    H^{m', m}_n(\beta) = H^{m, m'}_n(\beta)
-    H^{m', m}_n(\beta) = H^{-m', -m}_n(\beta)
-    H^{m', m}_n(\beta) = (-1)^{n+m+m'} H^{-m', m}_n(\pi - \beta)
-    H^{m', m}_n(\beta) = (-1)^{m+m'} H^{m', m}_n(-\beta)
+    H^{m', m}_n(β) = H^{m, m'}_n(β)
+    H^{m', m}_n(β) = H^{-m', -m}_n(β)
+    H^{m', m}_n(β) = (-1)^{n+m+m'} H^{-m', m}_n(π - β)
+    H^{m', m}_n(β) = (-1)^{m+m'} H^{m', m}_n(-β)
 
 Because of these symmetries, we only need to evaluate at most 1/4 of all the
 elements.
@@ -29,11 +29,21 @@ from functools import lru_cache
 from scipy.special import factorial
 import sympy
 
-from .. import jit
+from .. import jit, LMpM_total_size, LMpM_index
 
 sqrt3 = np.sqrt(3)
 sqrt2 = np.sqrt(2)
 inverse_sqrt2 = 1.0 / sqrt2
+
+
+@jit
+def ϵ(m):
+    if m <= 0:
+        return 1
+    elif m%2:
+        return -1
+    else:
+        return 1
 
 
 @jit
@@ -198,8 +208,8 @@ def _step_1(Hwedge):
 def _step_2(g, h, n_max, mp_max, Hwedge, Hextra, Hv, cosβ, sinβ):
     """Compute values H^{0,m}_{n}(β)for m=0,...,n and H^{0,m}_{n+1}(β) for m=0,...,n+1 using Eq. (32):
 
-        H^{0,m}_{n}(β) = (-1)^m \sqrt{(n-|m|)! / (n+|m|)!} P^{|m|}_{n}(cos β)
-                       = (-1)^m (sin β)^m \hat{P}^{|m|}_{n}(cos β) / \sqrt{k (2n+1)}
+        H^{0,m}_{n}(β) = (-1)^m √((n-|m|)! / (n+|m|)!) P^{|m|}_{n}(cos β)
+                       = (-1)^m (sin β)^m P̂^{|m|}_{n}(cos β) / √(k (2n+1))
 
     This function computes the associated Legendre functions directly by recursion
     as explained by Holmes and Featherstone (2002), doi:10.1007/s00190-002-0216-2.
@@ -241,6 +251,8 @@ def _step_2(g, h, n_max, mp_max, Hwedge, Hextra, Hv, cosβ, sinβ):
             hi = h[nn_index-i]
             for j in range(H.shape[1]):
                 H[n0n_index-i, j] = gi * cosβ[j] * H[n0n_index-i+1, j] - hi * sinβ[j]**2 * H[n0n_index-i+2, j]
+        # if n==2:
+        #     print("args2 =", (g, h, n_max, Hwedge, Hextra, Hv, cosβ, sinβ))
         # m = 0, with normalization
         const = 1.0 / np.sqrt(4*n+2)
         gi = g[nn_index-n]
@@ -271,12 +283,13 @@ def _step_2(g, h, n_max, mp_max, Hwedge, Hextra, Hv, cosβ, sinβ):
 
 @jit
 def _step_3(a, b, n_max, mp_max, Hwedge, Hextra, cosβ, sinβ):
-    """Use relation (41) to compute H^{1,m}_{n}(β) for m=1,...,n.  Using symmetry and shift of the
-    indices this relation can be written as
+    """Use relation (41) to compute H^{1,m}_{n}(β) for m=1,...,n.  Using symmetry and shift
+    of the indices this relation can be written as
 
-        b^{0}_{n+1} H^{1, m}_{n} =   \frac{b^{−m−1}_{n+1} (1−cosβ)}{2} H^{0, m+1}_{n+1}
-                                   − \frac{b^{ m−1}_{n+1} (1+cosβ)}{2} H^{0, m−1}_{n+1}
+        b^{0}_{n+1} H^{1, m}_{n} =   (b^{−m−1}_{n+1} (1−cosβ))/2 H^{0, m+1}_{n+1}
+                                   − (b^{ m−1}_{n+1} (1+cosβ))/2 H^{0, m−1}_{n+1}
                                    − a^{m}_{n} sinβ H^{0, m}_{n+1}
+
     """
     for n in range(1, n_max+1):
         # m = 1, ..., n
@@ -289,7 +302,7 @@ def _step_3(a, b, n_max, mp_max, Hwedge, Hextra, cosβ, sinβ):
             H2 = Hextra
         i3 = nm_index(n+1, 0)
         i4 = nabsm_index(n, 1)
-        inverse_b5 = 1 / b[i3]
+        inverse_b5 = 1.0 / b[i3]
         for i in range(n):
             b6 = b[-i+i3-2]
             b7 = b[i+i3]
@@ -304,7 +317,7 @@ def _step_3(a, b, n_max, mp_max, Hwedge, Hextra, cosβ, sinβ):
                 )
 
 
-@jit
+#@jit
 def _step_4(d, n_max, mp_max, Hwedge, Hv):
     """Recursively compute H^{m'+1, m}_{n}(β) for m'=1,...,n−1, m=m',...,n using relation (50) resolved
     with respect to H^{m'+1, m}_{n}:
@@ -319,13 +332,15 @@ def _step_4(d, n_max, mp_max, Hwedge, Hv):
     for n in range(2, n_max+1):
         for mp in range(1, n):
             # m = m', ..., n-1
-            i1 = wedge_index(n, mp+1, mp, mp_max)
+            # i1 = wedge_index(n, mp+1, mp, mp_max)
+            i1 = wedge_index(n, mp+1, mp+1, mp_max) - 1
             i2 = wedge_index(n, mp-1, mp, mp_max)
-            i3 = wedge_index(n, mp, mp-1, mp_max)
+            # i3 = wedge_index(n, mp, mp-1, mp_max)
+            i3 = wedge_index(n, mp, mp, mp_max) - 1
             i4 = wedge_index(n, mp, mp+1, mp_max)
             i5 = nm_index(n, mp)
             i6 = nm_index(n, mp-1)
-            inverse_d5 = d[i5]
+            inverse_d5 = 1.0 / d[i5]
             d6 = d[i6]
             for i in [0]:
                 d7 = d[i+i6]
@@ -345,6 +360,8 @@ def _step_4(d, n_max, mp_max, Hwedge, Hv):
                         - d7 * Hwedge[i+i3, j]
                         + d8 * Hwedge[i+i4, j]
                     )
+            # if n == 2 and mp == 1:
+            #     print("args2 =", (d, n_max, Hwedge, Hv, i1, i2, i3, i4))
             # m = n
             for i in [n-mp]:
                 for j in range(Hwedge.shape[1]):
@@ -373,15 +390,18 @@ def _step_5(d, n_max, mp_max, Hwedge, Hv):
     for n in range(0, n_max+1):
         for mp in range(0, -n, -1):
             # m = -m', ..., n-1
-            i1 = wedge_index(n, mp-1, -mp, mp_max)
-            i2 = wedge_index(n, mp+1, -mp, mp_max)
-            i3 = wedge_index(n, mp, -mp-1, mp_max)
+            # i1 = wedge_index(n, mp-1, -mp, mp_max)
+            i1 = wedge_index(n, mp-1, -mp+1, mp_max) - 1
+            # i2 = wedge_index(n, mp+1, -mp, mp_max)
+            i2 = wedge_index(n, mp+1, -mp+1, mp_max) - 1
+            # i3 = wedge_index(n, mp, -mp-1, mp_max)
+            i3 = wedge_index(n, mp, -mp, mp_max) - 1
             i4 = wedge_index(n, mp, -mp+1, mp_max)
             i5 = nm_index(n, mp-1)
             i6 = nm_index(n, mp)
             i7 = nm_index(n, -mp-1)
             i8 = nm_index(n, -mp)
-            inverse_d5 = d[i5]
+            inverse_d5 = 1.0 / d[i5]
             d6 = d[i6]
             for i in [0]:
                 d7 = d[i+i7]
@@ -506,3 +526,17 @@ class HCalculator(object):
         _step_5(self.d, self.n_max, self.mp_max, Hwedge, Hv)
         Hwedge.reshape((-1,)+cosβshape)
         return Hwedge
+
+    def wigner_d(self, cosβ, sinβ=None, workspace=None):
+        """Return Wigner's d matrix"""
+        ell_min = 0
+        ell_max = self.n_max
+        Hwedge = self(cosβ, sinβ, workspace)
+        d = np.empty((LMpM_total_size(ell_min, ell_max),) + cosβ.shape)
+        for ell in range(ell_min, ell_max+1):
+            for mp in range(-ell, ell+1):
+                for m in range(-ell, ell+1):
+                    i_d = LMpM_index(ell, mp, m, ell_min)
+                    i_H = wedge_index(ell, mp, m, self.mp_max)
+                    d[i_d] = ϵ(mp) * ϵ(-m) * Hwedge[i_H]
+        return d

@@ -102,3 +102,11 @@ def test_nmpm_index():
                 assert [n, mp, m] == indices[nmpm_index(n, mp, m)]
 
 
+def test_wigner_d():
+    import quaternionic
+    ell_max = 17
+    β = np.linspace(0, np.pi)
+    R = quaternionic.array.from_spherical_coordinates(β, 0)
+    d0 = np.array([sf.Wigner_D_matrices(Ri, 0, ell_max) for Ri in R]).T
+    d1 = sf.recursions.wignerH2.HCalculator(ell_max).wigner_d(np.cos(β))
+    assert np.max(np.abs(d1-d0)) < 4e3 * eps

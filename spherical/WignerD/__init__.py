@@ -391,7 +391,8 @@ def Wigner_D_matrices(R, ell_min, ell_max):
                  + "Try `Wigner_D_element` with an explicit array of `indices` for half-integers.")
         raise ValueError(error)
     matrices = np.empty((LMpM_total_size(ell_min, ell_max),), dtype=np.complex128)
-    _Wigner_D_matrices(R.a, R.b, ell_min, ell_max, matrices)
+    Rs = R.two_spinor
+    _Wigner_D_matrices(Rs.a, Rs.b, ell_min, ell_max, matrices)
     return matrices
 
 

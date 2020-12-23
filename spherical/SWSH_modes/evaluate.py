@@ -78,22 +78,21 @@ def evaluate(modes, R):
         # Compute phases exp(iα), exp(iβ), exp(iγ) from quaternion, storing in z
         quaternionic.converters._to_euler_phases(quaternions[i_R], z)
 
-        # Compute all integer powers zαᵏ for k ∈ [0, ell_max]
-        zαpowers = complex_powers(z[0], ell_max)
-
         # Compute Wigner H elements for this quaternion
         Hwedge = H(z[1].real, z[1].imag, workspace)[:, 0]
 
-        # print(z)
-        _evaluate(mode_weights, function_values[:, i_R], spin_weight, ell_min, ell_max, abs(spin_weight), Hwedge, zαpowers, z[2])
+        _evaluate(mode_weights, function_values[:, i_R], spin_weight, ell_min, ell_max, abs(spin_weight), Hwedge, z[0], z[2])
 
     return function_values.reshape(modes.shape[:-1] + R.shape[:-1])
 
 
 @jit
-def _evaluate(mode_weights, function_values, spin_weight, ell_min, ell_max, mp_max, Hwedge, zαpowers, zγ):
+def _evaluate(mode_weights, function_values, spin_weight, ell_min, ell_max, mp_max, Hwedge, zₐ, zᵧ):
     """Helper function for `evaluate`"""
-    z̄ᵧ = zᵧ.conjugate()
+    # z̄ᵧ = zᵧ.conjugate()
+    z̄ₐ = zₐ.conjugate()
+    
+    coefficient = (-1)**spin_weight * ϵ(spin_weight) * zᵧ.conjugate()**spin_weight
 
     # Loop over all input sets of modes
     for i_modes in range(mode_weights.shape[0]):
@@ -129,27 +128,30 @@ def _evaluate(mode_weights, function_values, spin_weight, ell_min, ell_max, mp_m
                     * Hwedge[wedge_index(ell, ell, -spin_weight)]#, mp_max)]
                 )
                 for m in range(ell-1, 0, -1):
-                    negative_terms *= z̄ᵧ
+                    # negative_terms *= z̄ᵧ
+                    negative_terms *= z̄ₐ
                     negative_terms += (
                         fₗₘ[LM_index(ell, -m, ell_min)]
                         * Hwedge[wedge_index(ell, -m, -spin_weight)]#, mp_max)]
                     )
-                #for m in range(ell-1, 0, -1):
-                    positive_terms *= zᵧ
+                    # positive_terms *= zᵧ
+                    positive_terms *= zₐ
                     positive_terms += (
                         (-1)**m
                         * fₗₘ[LM_index(ell, m, ell_min)]
                         * Hwedge[wedge_index(ell, m, -spin_weight)]#, mp_max)]
                     )
-                f_tmp += negative_terms * z̄ᵧ
-                f_tmp += positive_terms * zᵧ
+                # f_tmp += negative_terms * z̄ᵧ
+                # f_tmp += positive_terms * zᵧ
+                f_tmp += negative_terms * z̄ₐ
+                f_tmp += positive_terms * zₐ
 
             f_tmp *= np.sqrt((2 * ell + 1) * one_over_4pi)
             f += f_tmp
 
-        # Finish calculation of f by multiplying by zₐ⁻ˢ = exp[i(ϕₛ+ϕₐ)*(-s)]
-        if -spin_weight >= 0:
-            f *= (-1)**spin_weight * ϵ(spin_weight) * zαpowers[-spin_weight]
-        else:
-            f *= (-1)**spin_weight * ϵ(spin_weight) * zαpowers[spin_weight].conjugate()
-
+        # # Finish calculation of f by multiplying by zₐ⁻ˢ = exp[i(ϕₛ+ϕₐ)*(-s)]
+        # if -spin_weight >= 0:
+        #     f *= (-1)**spin_weight * ϵ(spin_weight) * zᵧpowers[-spin_weight]
+        # else:
+        #     f *= (-1)**spin_weight * ϵ(spin_weight) * zᵧpowers[spin_weight].conjugate()
+        f *= coefficient

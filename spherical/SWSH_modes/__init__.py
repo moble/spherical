@@ -5,6 +5,7 @@ import copy
 import math
 import numpy as np
 from .. import LM_total_size, LM_deduce_ell_max
+from . import evaluate
 
 
 class Modes(np.ndarray):
