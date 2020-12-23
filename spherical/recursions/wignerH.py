@@ -499,7 +499,7 @@ class HCalculator(object):
         _step_2(self.g, self.h, self.n_max, Hwedge, Hextra, Hv, cosβ, sinβ)
         _step_3(self.a, self.b, self.n_max, Hwedge, Hextra, cosβ, sinβ)
         _step_4(self.d, self.n_max, Hwedge, Hv)
-        # _step_5(self.d, self.n_max, Hwedge, Hv)
+        _step_5(self.d, self.n_max, Hwedge, Hv)
         Hwedge.reshape((-1,)+cosβshape)
         return Hwedge
 
