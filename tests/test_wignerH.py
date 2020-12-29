@@ -112,6 +112,32 @@ def test_wigner_d():
     assert np.max(np.abs(d1-d0)) < 4e3 * eps
 
 
+def test_wigner_d_mp_max():
+    import quaternionic
+    ell_max = 17
+    for mp_max in range(ell_max-1, ell_max+1):
+        β = np.linspace(0, np.pi)
+        R = quaternionic.array.from_spherical_coordinates(β, 0)
+        d0 = np.array([sf.Wigner_D_matrices(Ri, 0, ell_max) for Ri in R]).T
+        d1 = HCalculator(ell_max, mp_max).wigner_d(np.cos(β))
+        d0 = np.array([
+            d0[i]
+            for ell in range(0, ell_max+1)
+            for mp in range(-mp_max, mp_max+1)
+            for m in range(-ell, ell+1)
+            for i in [sf.LMpM_index(ell, mp, m, 0)]
+        ])
+        d1 = np.array([
+            d1[i]
+            for ell in range(0, ell_max+1)
+            for mp in range(-mp_max, mp_max+1)
+            for m in range(-ell, ell+1)
+            for i in [sf.LMpM_index(ell, mp, m, 0)]
+        ])
+        assert np.max(np.abs(d1-d0)) < 4e3 * eps
+        raise NotImplementedError("wigner_d didn't get the memo about mp_max (because LMpM_index and total size didn't)")
+
+
 def test_wigner_D():
     import quaternionic
     ell_max = 17

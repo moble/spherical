@@ -57,7 +57,7 @@ def evaluate(modes, R):
     quaternions = R.ndarray.reshape((-1, 4))
 
     # Prepare to compute Wigner elements (H is roughly Wigner's d function with nicer properties)
-    H = HCalculator(ell_max)#, abs(spin_weight))
+    H = HCalculator(ell_max, abs(spin_weight))
 
     # Construct storage space
     workspace = H.workspace([1.0])
@@ -80,7 +80,6 @@ def evaluate(modes, R):
 @jit
 def _evaluate(mode_weights, function_values, spin_weight, ell_min, ell_max, mp_max, Hwedge, zₐ, zᵧ):
     """Helper function for `evaluate`"""
-    # z̄ᵧ = zᵧ.conjugate()
     z̄ₐ = zₐ.conjugate()
     
     coefficient = (-1)**spin_weight * ϵ(spin_weight) * zᵧ.conjugate()**spin_weight
@@ -101,7 +100,7 @@ def _evaluate(mode_weights, function_values, spin_weight, ell_min, ell_max, mp_m
             # Initialize with m=0 term
             f_tmp = (
                 fₗₘ[LM_index(ell, 0, ell_min)]
-                * Hwedge[wedge_index(ell, 0, -spin_weight)]#, mp_max)]
+                * Hwedge[wedge_index(ell, 0, -spin_weight, mp_max)]
             )
 
             if ell > 0:
@@ -111,38 +110,31 @@ def _evaluate(mode_weights, function_values, spin_weight, ell_min, ell_max, mp_m
                 # Horner form
                 negative_terms = (
                     fₗₘ[LM_index(ell, -ell, ell_min)]
-                    * Hwedge[wedge_index(ell, -ell, -spin_weight)]#, mp_max)]
+                    * Hwedge[wedge_index(ell, -ell, -spin_weight, mp_max)]
                 )
                 positive_terms = (
                     (-1)**ell
                     * fₗₘ[LM_index(ell, ell, ell_min)]
-                    * Hwedge[wedge_index(ell, ell, -spin_weight)]#, mp_max)]
+                    * Hwedge[wedge_index(ell, ell, -spin_weight, mp_max)]
                 )
                 for m in range(ell-1, 0, -1):
                     # negative_terms *= z̄ᵧ
                     negative_terms *= z̄ₐ
                     negative_terms += (
                         fₗₘ[LM_index(ell, -m, ell_min)]
-                        * Hwedge[wedge_index(ell, -m, -spin_weight)]#, mp_max)]
+                        * Hwedge[wedge_index(ell, -m, -spin_weight, mp_max)]
                     )
                     # positive_terms *= zᵧ
                     positive_terms *= zₐ
                     positive_terms += (
                         (-1)**m
                         * fₗₘ[LM_index(ell, m, ell_min)]
-                        * Hwedge[wedge_index(ell, m, -spin_weight)]#, mp_max)]
+                        * Hwedge[wedge_index(ell, m, -spin_weight, mp_max)]
                     )
-                # f_tmp += negative_terms * z̄ᵧ
-                # f_tmp += positive_terms * zᵧ
                 f_tmp += negative_terms * z̄ₐ
                 f_tmp += positive_terms * zₐ
 
             f_tmp *= np.sqrt((2 * ell + 1) * one_over_4pi)
             f += f_tmp
 
-        # # Finish calculation of f by multiplying by zₐ⁻ˢ = exp[i(ϕₛ+ϕₐ)*(-s)]
-        # if -spin_weight >= 0:
-        #     f *= (-1)**spin_weight * ϵ(spin_weight) * zᵧpowers[-spin_weight]
-        # else:
-        #     f *= (-1)**spin_weight * ϵ(spin_weight) * zᵧpowers[spin_weight].conjugate()
         f *= coefficient

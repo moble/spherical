@@ -69,11 +69,9 @@ def wedge_size(ℓₘₐₓ, mpₘₐₓ=None):
 
         [
             (ℓ, mp, m) for ℓ in range(ℓₘₐₓ+1)
-            for mp in range(-mpₘₐₓ, mpₘₐₓ+1)
-            for m in range(abs(mp), n+1)
+            for mp in range(-min(ℓ, mpₘₐₓ), min(ℓ, mpₘₐₓ)+1)
+            for m in range(abs(mp), ℓ+1)
         ]
-
-    See the docstring of `wedge_index` for
 
     """
     if ℓₘₐₓ < 0:
@@ -121,8 +119,8 @@ def wedge_index(ℓ, mp, m, mpₘₐₓ=None):
 
         [
             (ℓ, mp, m) for ℓ in range(ℓₘₐₓ+1)
-            for mp in range(-mpₘₐₓ, mpₘₐₓ+1)
-            for m in range(abs(mp), n+1)
+            for mp in range(-min(ℓ, mpₘₐₓ), min(ℓ, mpₘₐₓ)+1)
+            for m in range(abs(mp), ℓ+1)
         ]
 
     """
@@ -329,7 +327,7 @@ def _step_4(d, n_max, mp_max, Hwedge, Hv):
 
     """
     for n in range(2, n_max+1):
-        for mp in range(1, n):
+        for mp in range(1, min(n, mp_max)):
             # m = m', ..., n-1
             # i1 = wedge_index(n, mp+1, mp, mp_max)
             i1 = wedge_index(n, mp+1, mp+1, mp_max) - 1
@@ -385,7 +383,7 @@ def _step_5(d, n_max, mp_max, Hwedge, Hv):
 
     """
     for n in range(0, n_max+1):
-        for mp in range(0, -n, -1):
+        for mp in range(0, -min(n, mp_max), -1):
             # m = -m', ..., n-1
             # i1 = wedge_index(n, mp-1, -mp, mp_max)
             i1 = wedge_index(n, mp-1, -mp+1, mp_max) - 1
@@ -467,12 +465,14 @@ class HCalculator(object):
 
         """
         self.n_max = int(n_max)
+        if self.n_max < 0:
+            raise ValueError('Nonsensical value for n_max = {0}'.format(self.n_max))
         if mp_max is not None:
             self.mp_max = abs(int(mp_max))
         else:
-            self.mp_max = None
-        if self.n_max < 0:
-            raise ValueError('Nonsensical value for n_max = {0}'.format(self.n_max))
+            self.mp_max = self.n_max
+        if self.mp_max < 1:
+            raise ValueError(f'Currently require mp_max to be at least 1, not {self.mp_max}')
         self.wedge_size = wedge_size(self.n_max, self.mp_max)
         n = np.array([n for n in range(self.n_max+2) for m in range(-n, n+1)])
         m = np.array([m for n in range(self.n_max+2) for m in range(-n, n+1)])
