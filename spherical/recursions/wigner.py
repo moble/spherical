@@ -758,7 +758,7 @@ class Wigner:
     def rotate(self, modes, R):
 
 
-    def evaluate(self, modes, R):
+    def evaluate(self, modes, R, out=None):
         """Evaluate Modes object as function of rotations
 
         Parameters
@@ -769,6 +769,11 @@ class Wigner:
             evaluated on each of these quaternions.  Note that it is fairly standard to
             construct these quaternions from spherical coordinates, as with the
             function `quaternionic.array.from_spherical_coordinates`.
+        out : array_like, optional
+            Array into which the function values should be written.  It should be an
+            array of complex, with shape `modes.shape[:-1]+R.shape[:-1]`.  If not
+            present, the array will be created.  In either case, the array will also be
+            returned.
 
         Returns
         -------
@@ -805,7 +810,7 @@ class Wigner:
 
         # Construct storage space
         z = np.empty(3, dtype=complex)
-        function_values = np.zeros(mode_weights.shape[:-1] + quaternions.shape[:-1], dtype=complex)
+        function_values = out or np.zeros(mode_weights.shape[:-1] + quaternions.shape[:-1], dtype=complex)
 
         # Loop over all input quaternions
         for i_R in range(quaternions.shape[0]):
@@ -815,6 +820,7 @@ class Wigner:
             # Compute Wigner H elements for this quaternion
             Hwedge = self.H(z[1])
 
+            raise NotImplementedError("Need separate arguments and logic for ell_min/max of H and of modes")
             _evaluate(mode_weights, function_values[:, i_R], spin_weight, ell_min, ell_max, abs(spin_weight), Hwedge, z[0], z[2])
 
         return function_values.reshape(modes.shape[:-1] + R.shape[:-1])
@@ -832,48 +838,46 @@ def _evaluate(mode_weights, function_values, spin_weight, ell_min, ell_max, mp_m
         f = function_values[i_modes:i_modes+1]
         fₗₘ = mode_weights[i_modes]
 
-        ### TODO:
-        # 0. Use newer H with narrow wedges (mp_max)
-        # 1. Reduce LM_index uses to 1, and then index relative to that one
-        # 2. Manually replace wedge_index calls with calls into the existing wedge
-        # 3. Call wedge_index helper function directly
-        # 4. Replace (-1)**k expressions with tracked signs
+        raise NotImplementedError("Need separate arguments and logic for ell_min/max of H and of modes")
+        for ell in range(max(ell_min, abs(spin_weight)), ell_max+1):
+            # Establish some base indices, relative to which offsets are simple
+            i_fₗₘ = LM_index(ell, 0, ell_min)
+            i_H = _WignerHindex(ell, 0, abs(spin_weight), mp_max)
+            i_Hp = _WignerHindex(ell, spin_weight, abs(spin_weight), mp_max)
+            i_Hm = _WignerHindex(ell, -spin_weight, abs(spin_weight), mp_max)
 
-        for ell in range(ell_min, ell_max+1):
             # Initialize with m=0 term
-            f_tmp = (
-                fₗₘ[LM_index(ell, 0, ell_min)]
-                * Hwedge[wedge_index(ell, 0, -spin_weight, mp_max)]
-            )
+            f_tmp = fₗₘ[i_fₗₘ] * Hwedge[i_H]  # H(ell, -s, 0)
 
             if ell > 0:
+
+                ϵ_m = (-1)**ell
 
                 # Compute dˡₘ₋ₛ terms recursively for 0<m<l, using symmetries for negative m, and
                 # simultaneously add the mode weights times zᵧᵐ=exp[i(ϕₛ-ϕₐ)m] to the result using
                 # Horner form
-                negative_terms = (
-                    fₗₘ[LM_index(ell, -ell, ell_min)]
-                    * Hwedge[wedge_index(ell, -ell, -spin_weight, mp_max)]
-                )
-                positive_terms = (
-                    (-1)**ell
-                    * fₗₘ[LM_index(ell, ell, ell_min)]
-                    * Hwedge[wedge_index(ell, ell, -spin_weight, mp_max)]
-                )
-                for m in range(ell-1, 0, -1):
-                    # negative_terms *= z̄ᵧ
+                negative_terms = fₗₘ[i_fₗₘ-ell] * Hwedge[i_Hp + ell - abs(spin_weight)]  # H(ell, -s, -ell)
+                positive_terms = ϵ_m * fₗₘ[i_fₗₘ+ell] * Hwedge[i_Hm + ell - abs(spin_weight)]  # H(ell, -s, ell)
+                for m in range(ell-1, max(0, abs(spin_weight)-1), -1):
+                    ϵ_m *= -1
                     negative_terms *= z̄ₐ
-                    negative_terms += (
-                        fₗₘ[LM_index(ell, -m, ell_min)]
-                        * Hwedge[wedge_index(ell, -m, -spin_weight, mp_max)]
-                    )
-                    # positive_terms *= zᵧ
+                    negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[i_Hp + m - abs(spin_weight)]  # H(ell, -s, -m)
                     positive_terms *= zₐ
-                    positive_terms += (
-                        (-1)**m
-                        * fₗₘ[LM_index(ell, m, ell_min)]
-                        * Hwedge[wedge_index(ell, m, -spin_weight, mp_max)]
-                    )
+                    positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[i_Hm + m - abs(spin_weight)]  # H(ell, -s, m)
+                if spin_weight >= 0:
+                    for m in range(max(0, abs(spin_weight)-1), 0, -1):
+                        ϵ_m *= -1
+                        negative_terms *= z̄ₐ
+                        negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[_WignerHindex(ell, m, spin_weight, mp_max)]  # H(ell, -s, -m)
+                        positive_terms *= zₐ
+                        positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[_WignerHindex(ell, -m, spin_weight, mp_max)]  # H(ell, -s, m)
+                else:
+                    for m in range(max(0, abs(spin_weight)-1), 0, -1):
+                        ϵ_m *= -1
+                        negative_terms *= z̄ₐ
+                        negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[_WignerHindex(ell, -m, -spin_weight, mp_max)]  # H(ell, -s, -m)
+                        positive_terms *= zₐ
+                        positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[_WignerHindex(ell, m, -spin_weight, mp_max)]  # H(ell, -s, m)
                 f_tmp += negative_terms * z̄ₐ
                 f_tmp += positive_terms * zₐ
 
