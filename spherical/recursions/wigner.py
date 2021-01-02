@@ -654,14 +654,14 @@ class Wigner:
             must have size 4), representing the rotations on which the 𝔇 matrix will be
             evaluated.
         out : array_like, optional
-            Array into which the d values should be written.  It should be an array of
+            Array into which the 𝔇 values should be written.  It should be an array of
             complex, with size `self.Dsize`.  If not present, the array will be
             created.  In either case, the array will also be returned.
 
         Returns
         -------
         D : array
-            This is a 1-dimensional array of floats; see below.
+            This is a 1-dimensional array of complex; see below.
 
         See Also
         --------
@@ -698,11 +698,52 @@ class Wigner:
         return 𝔇
 
     def sYlm(self, s, R, out=None):
-        """
+        """Evaluate (possibly spin-weighted) spherical harmonic
+
+        Parameters
+        ----------
+        R : array_like
+            Array to be interpreted as a quaternionic array (thus its final dimension
+            must have size 4), representing the rotations on which the sYlm will be
+            evaluated.
+        out : array_like, optional
+            Array into which the d values should be written.  It should be an array of
+            complex, with size `self.Ysize`.  If not present, the array will be
+            created.  In either case, the array will also be returned.
+
+        Returns
+        -------
+        Y : array
+            This is a 1-dimensional array of complex; see below.
+
+        See Also
+        --------
+        H : Compute a portion of the H matrix
+        d : Compute the full Wigner d matrix
+        D : Compute the full Wigner 𝔇 matrix
+        rotate : Avoid computing the full 𝔇 matrix and rotate modes directly
+        evaluate : Avoid computing the full 𝔇 matrix and evaluate modes directly
+
+        Notes
+        -----
+        This function is the preferred method of computing the 𝔇 matrix for large ell
+        values.  In particular, above ell≈32 standard formulas become completely
+        unusable because of numerical instabilities and overflow.  This function uses
+        stable recursion methods instead, and should be usable beyond ell≈1000.
+
+        This function computes ₛYₗₘ(R).  The result is returned in a 1-dimensional
+        array ordered as
+
+            [
+                Y(s, ell, m, R)
+                for ell in range(ell_max+1)
+                for m in range(-ell, ell+1)
+            ]
+
         """
         if abs(s) > self.mp_max:
             raise ValueError(
-                f"This object has ell_max={self.ell_max}, which is not "
+                f"This object has mp_max={self.mp_max}, which is not "
                 f"sufficient to compute sYlm values for spin weight s={s}"
             )
         R = quaternionic.array(R)
@@ -714,10 +755,132 @@ class Wigner:
         _fill_sYlm(self.ell_min, self.ell_max, s, Y, self.Hwedge, zₐpowers, zᵧpowers)
         return Y
 
-    rotate(modes, rotor)
-    evaluate(modes, *args)
-      - R
-      - θ, ϕ
+    def rotate(self, modes, R):
+
+
+    def evaluate(self, modes, R):
+        """Evaluate Modes object as function of rotations
+
+        Parameters
+        ----------
+        modes : Modes object
+        R : quaternionic.array
+            Arbitrarily shaped array of quaternions.  All modes in the input will be
+            evaluated on each of these quaternions.  Note that it is fairly standard to
+            construct these quaternions from spherical coordinates, as with the
+            function `quaternionic.array.from_spherical_coordinates`.
+
+        Returns
+        -------
+        f : array_like
+            This array holds the complex function values.  Its shape is
+            modes.shape[:-1]+R.shape[:-1].
+
+        """
+        spin_weight = modes.spin_weight
+        ell_min = modes.ell_min
+        ell_max = modes.ell_max
+
+        if abs(spin_weight) > self.mp_max:
+            raise ValueError(
+                f"This object has mp_max={self.mp_max}, which is not "
+                f"sufficient to compute sYlm values for spin weight s={spin_weight}"
+            )
+
+        if max(abs(spin_weight), ell_min) < self.ell_min:
+            raise ValueError(
+                f"This object has ell_min={self.ell_min}, which is not "
+                f"sufficient for the requested spin weight s={spin_weight} and ell_min={ell_min}"
+            )
+
+        if ell_max > self.ell_max:
+            raise ValueError(
+                f"This object has ell_max={self.ell_max}, which is not "
+                f"sufficient for the input modes object with ell_max={ell_max}"
+            )
+
+        # Reinterpret inputs as 2-d np.arrays
+        mode_weights = modes.ndarray.reshape((-1, modes.shape[-1]))
+        quaternions = quaternionic.array(R).ndarray.reshape((-1, 4))
+
+        # Construct storage space
+        z = np.empty(3, dtype=complex)
+        function_values = np.zeros(mode_weights.shape[:-1] + quaternions.shape[:-1], dtype=complex)
+
+        # Loop over all input quaternions
+        for i_R in range(quaternions.shape[0]):
+            # Compute phases exp(iα), exp(iβ), exp(iγ) from quaternion, storing in z
+            quaternionic.converters._to_euler_phases(quaternions[i_R], z)
+
+            # Compute Wigner H elements for this quaternion
+            Hwedge = self.H(z[1])
+
+            _evaluate(mode_weights, function_values[:, i_R], spin_weight, ell_min, ell_max, abs(spin_weight), Hwedge, z[0], z[2])
+
+        return function_values.reshape(modes.shape[:-1] + R.shape[:-1])
+
+
+@jit
+def _evaluate(mode_weights, function_values, spin_weight, ell_min, ell_max, mp_max, Hwedge, zₐ, zᵧ):
+    """Helper function for `evaluate`"""
+    z̄ₐ = zₐ.conjugate()
+
+    coefficient = (-1)**spin_weight * ϵ(spin_weight) * zᵧ.conjugate()**spin_weight
+
+    # Loop over all input sets of modes
+    for i_modes in range(mode_weights.shape[0]):
+        f = function_values[i_modes:i_modes+1]
+        fₗₘ = mode_weights[i_modes]
+
+        ### TODO:
+        # 0. Use newer H with narrow wedges (mp_max)
+        # 1. Reduce LM_index uses to 1, and then index relative to that one
+        # 2. Manually replace wedge_index calls with calls into the existing wedge
+        # 3. Call wedge_index helper function directly
+        # 4. Replace (-1)**k expressions with tracked signs
+
+        for ell in range(ell_min, ell_max+1):
+            # Initialize with m=0 term
+            f_tmp = (
+                fₗₘ[LM_index(ell, 0, ell_min)]
+                * Hwedge[wedge_index(ell, 0, -spin_weight, mp_max)]
+            )
+
+            if ell > 0:
+
+                # Compute dˡₘ₋ₛ terms recursively for 0<m<l, using symmetries for negative m, and
+                # simultaneously add the mode weights times zᵧᵐ=exp[i(ϕₛ-ϕₐ)m] to the result using
+                # Horner form
+                negative_terms = (
+                    fₗₘ[LM_index(ell, -ell, ell_min)]
+                    * Hwedge[wedge_index(ell, -ell, -spin_weight, mp_max)]
+                )
+                positive_terms = (
+                    (-1)**ell
+                    * fₗₘ[LM_index(ell, ell, ell_min)]
+                    * Hwedge[wedge_index(ell, ell, -spin_weight, mp_max)]
+                )
+                for m in range(ell-1, 0, -1):
+                    # negative_terms *= z̄ᵧ
+                    negative_terms *= z̄ₐ
+                    negative_terms += (
+                        fₗₘ[LM_index(ell, -m, ell_min)]
+                        * Hwedge[wedge_index(ell, -m, -spin_weight, mp_max)]
+                    )
+                    # positive_terms *= zᵧ
+                    positive_terms *= zₐ
+                    positive_terms += (
+                        (-1)**m
+                        * fₗₘ[LM_index(ell, m, ell_min)]
+                        * Hwedge[wedge_index(ell, m, -spin_weight, mp_max)]
+                    )
+                f_tmp += negative_terms * z̄ₐ
+                f_tmp += positive_terms * zₐ
+
+            f_tmp *= np.sqrt((2 * ell + 1) * inverse_4pi)
+            f += f_tmp
+
+        f *= coefficient
 
 
 @jit
