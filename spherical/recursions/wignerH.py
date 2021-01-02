@@ -24,11 +24,9 @@ elements.
 
 """
 
-from functools import lru_cache
 import numpy as np
-from scipy.special import factorial
-
 import quaternionic
+
 from . import complex_powers
 from .. import jit, LMpM_total_size, LMpM_index
 
