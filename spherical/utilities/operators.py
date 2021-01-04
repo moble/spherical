@@ -3,8 +3,7 @@
 
 from math import sqrt, pi
 import numpy as np
-from .. import jit
-from . import LM_total_size
+from .. import jit, LM_total_size
 
 
 @jit

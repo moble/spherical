@@ -7,7 +7,6 @@ import copy
 import math
 import numpy as np
 from .. import LM_total_size
-from . import evaluate
 
 
 def LM_deduce_ell_max(size, ell_min=0):

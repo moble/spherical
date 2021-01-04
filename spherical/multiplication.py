@@ -2,7 +2,7 @@ import math
 import numpy as np
 import numba as nb
 from . import LM_total_size, LM_index, jit
-from .recursions import Wigner3jCalculator
+from .recursions.wigner3j import Wigner3jCalculator
 
 
 @jit

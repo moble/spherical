@@ -5,7 +5,8 @@ import os
 import pytest
 import numpy as np
 import quaternionic
-from spherical import ell_max as ell_max_default
+
+ell_max_default = 36
 
 
 def pytest_addoption(parser):

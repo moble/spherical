@@ -27,7 +27,6 @@ elements.
 import numpy as np
 import quaternionic
 
-from . import 
 from .. import jit, complex_powers
 
 sqrt3 = np.sqrt(3)

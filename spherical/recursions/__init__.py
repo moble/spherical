@@ -3,9 +3,9 @@
 
 import numpy as np
 from .. import jit
-from .complex_powers import complex_powers
-from .wigner3j import Wigner3jCalculator, Wigner3j, clebsch_gordan
-from .wignerH import HCalculator
+# from .complex_powers import complex_powers
+# from .wigner3j import Wigner3jCalculator, Wigner3j, clebsch_gordan
+# from .wignerH import HCalculator
 
 
 

@@ -10,7 +10,7 @@ from .. import jit
 
 
 @jit
-def WignerHsize(mp_max, ell_max):
+def WignerHsize(mp_max, ell_max=-2):
     """Total size of array of wedges of width mp_max up to ell_max
 
     Parameters
@@ -37,7 +37,9 @@ def WignerHsize(mp_max, ell_max):
         ]
 
     """
-    if ell_max < 0:
+    if ell_max == -2:
+        ell_max = mp_max
+    elif ell_max < 0:
         return 0
     if mp_max is None or mp_max > ell_max:
         return (ell_max+1) * (ell_max+2) * (2*ell_max+3) // 6
@@ -46,7 +48,7 @@ def WignerHsize(mp_max, ell_max):
 
 
 @jit
-def WignerHrange(mp_max, ell_max):
+def WignerHrange(mp_max, ell_max=-1):
     """Create an array of (ℓ, m', m) indices as in H array
 
     Parameters
@@ -73,6 +75,8 @@ def WignerHrange(mp_max, ell_max):
         ]
 
     """
+    if ell_max < 0:
+        ell_max = mp_max
     r = np.empty((WignerHsize(mp_max, ell_max), 3), dtype=np.int64)
     i = 0
     for ell in range(ell_max+1):
@@ -88,7 +92,7 @@ def WignerHrange(mp_max, ell_max):
 @jit
 def _WignerHindex(ell, mp, m, mp_max):
     """Helper function for `WignerHindex`"""
-    i = WignerHsize(ell-1, mp_max)  # total size of everything with smaller ell
+    i = WignerHsize(mp_max, ell-1)  # total size of everything with smaller ell
     if mp<1:
         i += (mp_max + mp) * (2*ell - mp_max + mp + 1) // 2  # size of wedge to the left of m'
     else:
