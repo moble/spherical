@@ -5,6 +5,7 @@
 
 """
 
+import numpy as np
 from .. import jit
 
 
@@ -20,6 +21,7 @@ def WignerHsize(mp_max, ell_max):
 
     See Also
     --------
+    WignerHrange : Array of (ℓ, m', m) indices corresponding to this wedge
     WignerHindex : Index inside these wedges
 
     Notes
@@ -41,6 +43,47 @@ def WignerHsize(mp_max, ell_max):
         return (ell_max+1) * (ell_max+2) * (2*ell_max+3) // 6
     else:
         return ((ell_max+1)*(ell_max+2)*(2*ell_max+3) - 2*(ell_max-mp_max)*(ell_max-mp_max+1)*(ell_max-mp_max+2)) // 6
+
+
+@jit
+def WignerHrange(mp_max, ell_max):
+    """Create an array of (ℓ, m', m) indices as in H array
+
+    Parameters
+    ----------
+    ell_max : int
+    mp_max : int, optional
+        If None, it is assumed to be at least ell
+
+    See Also
+    --------
+    WignerHsize : Total size of wedge array
+    WignerHindex : Index inside these wedges
+
+    Notes
+    -----
+    Here, it is assumed that only data with m≥|m'| are stored, and only
+    corresponding values are passed.  We also assume |m|≤ℓ and |m'|≤ℓ.  Neither of
+    these are checked.  The wedge array that this function indexes is ordered as
+
+        [
+            H(ell, mp, m) for ell in range(ell_max+1)
+            for mp in range(-min(ell, mp_max), min(ell, mp_max)+1)
+            for m in range(abs(mp), ell+1)
+        ]
+
+    """
+    r = np.empty((WignerHsize(mp_max, ell_max), 3), dtype=np.int64)
+    i = 0
+    for ell in range(ell_max+1):
+        for mp in range(-min(ell, mp_max), min(ell, mp_max)+1):
+            for m in range(abs(mp), ell+1):
+                r[i, 0] = ell
+                r[i, 1] = mp
+                r[i, 2] = m
+                i += 1
+    return r
+
 
 @jit
 def _WignerHindex(ell, mp, m, mp_max):
@@ -70,6 +113,7 @@ def WignerHindex(ell, mp, m, mp_max=None):
     See Also
     --------
     WignerHsize : Total size of wedge array
+    WignerHrange : Array of (ℓ, m', m) indices corresponding to this wedge
 
     Notes
     -----
@@ -198,6 +242,48 @@ def WignerDsize(ell_min, mp_max, ell_max):
 
 
 @jit
+def WignerDrange(ell_min, mp_max, ell_max):
+    """Create an array of (ℓ, m', m) indices as in 𝔇 array
+
+    Parameters
+    ----------
+    ell_min : int
+        Integer satisfying 0 <= ell_min <= ell_max
+    mp_max : int
+        Integer satisfying 0 <= mp_max
+    ell_max : int
+        Integer satisfying 0 <= ell_min <= ell_max
+
+    See Also
+    --------
+    WignerDsize : Total size of 𝔇 array
+    WignerDindex : Index inside these wedges
+
+    Notes
+    -----
+    This assumes that the Wigner 𝔇 matrix is arranged as
+
+        [
+            𝔇(ℓ, mp, m)
+            for ℓ in range(ell_min, ell_max+1)
+            for mp in range(-min(ℓ, mp_max), min(ℓ, mp_max)+1)
+            for m in range(-ℓ, ℓ+1)
+        ]
+
+    """
+    r = np.empty((WignerDsize(ell_min, mp_max, ell_max), 3), dtype=np.int64)
+    i = 0
+    for ell in range(ell_min, ell_max+1):
+        for mp in range(-min(ell, mp_max), min(ell, mp_max)+1):
+            for m in range(-ell, ell+1):
+                r[i, 0] = ell
+                r[i, 1] = mp
+                r[i, 2] = m
+                i += 1
+    return r
+
+
+@jit
 def WignerDindex(ell_min, mp_max, ell_max, ell, mp, m):
     """Compute index into Wigner 𝔇 matrix
 
@@ -286,6 +372,48 @@ def Ysize(ell_min, ell_max):
     #     (ell_min, ell_max)
     # )
     return ell_max * (ell_max + 2) - ell_min**2 + 1
+
+
+@jit
+def Yrange(ell_min, ell_max):
+    """Create an array of (ℓ, m) indices as in Y array
+
+    Parameters
+    ----------
+    ell_min : int
+        Integer satisfying 0 <= ell_min <= ell_max
+    ell_max : int
+        Integer satisfying 0 <= ell_min <= ell_max
+
+    Returns
+    -------
+    i : int
+        Total size of array of mode weights arranged as described below
+
+    See Also
+    --------
+    Ysize : Total size of array of mode weights
+    Yindex : Index of a particular element of the mode weight array
+
+    Notes
+    -----
+    This assumes that the modes are arranged (with fixed s value) as
+
+        [
+            Y(s, ℓ, m)
+            for ℓ in range(ell_min, ell_max+1)
+            for m in range(-ℓ, ℓ+1)
+        ]
+
+    """
+    r = np.empty((Ysize(ell_min, ell_max), 2), dtype=np.int64)
+    i = 0
+    for ell in range(ell_min, ell_max+1):
+        for m in range(-ell, ell+1):
+            r[i, 0] = ell
+            r[i, 1] = m
+            i += 1
+    return r
 
 
 @jit

@@ -27,12 +27,11 @@ elements.
 import numpy as np
 import quaternionic
 
-from . import complex_powers
-from .. import jit, LMpM_total_size, LMpM_index
+from . import 
+from .. import jit, complex_powers
 
 sqrt3 = np.sqrt(3)
-sqrt2 = np.sqrt(2)
-inverse_sqrt2 = 1.0 / sqrt2
+inverse_sqrt2 = 1.0 / np.sqrt(2)
 
 
 @jit
@@ -43,63 +42,6 @@ def ϵ(m):
         return -1
     else:
         return 1
-
-
-@jit
-def _wedge_index(ℓ, mp, m, mpₘₐₓ):
-    """Helper function for `wedge_index`"""
-    i = wedge_size(ℓ-1, mpₘₐₓ)  # total size of everything with smaller ℓ
-    if mp<1:
-        i += (mpₘₐₓ + mp) * (2*ℓ - mpₘₐₓ + mp + 1) // 2  # size of wedge to the left of m'
-    else:
-        i += (mpₘₐₓ + 1) * (2*ℓ - mpₘₐₓ + 2) // 2  # size of entire left half of wedge
-        i += (mp - 1) * (2*ℓ - mp + 2) // 2  # size of right half of wedge to the left of m'
-    i += m - abs(mp)  # size of column in wedge between m and |m'|
-    return i
-
-
-@jit
-def wedge_index(ℓ, mp, m, mpₘₐₓ=None):
-    """Index to "wedge" arrays
-
-    Parameters
-    ----------
-    ℓ : int
-    mp : int
-    m : int
-    mpₘₐₓ : int, optional
-        If None, it is assumed to be at least ℓ
-
-    See Also
-    --------
-    wedge_size : Total size of wedge array
-
-    Notes
-    -----
-    Here, it is assumed that only data with m≥|m'| are stored, and only
-    corresponding values are passed.  We also assume |m|≤ℓ and |m'|≤ℓ.  Neither of
-    these are checked.  The wedge array that this function indexes is ordered as
-
-        [
-            (ℓ, mp, m) for ℓ in range(ℓₘₐₓ+1)
-            for mp in range(-min(ℓ, mpₘₐₓ), min(ℓ, mpₘₐₓ)+1)
-            for m in range(abs(mp), ℓ+1)
-        ]
-
-    """
-    mp_max = ℓ
-    if mpₘₐₓ is not None:
-        mp_max = min(mpₘₐₓ, mp_max)
-    if m < -mp:
-        if m < mp:
-            return _wedge_index(ℓ, -mp, -m, mp_max)
-        else:
-            return _wedge_index(ℓ, -m, -mp, mp_max)
-    else:
-        if m < mp:
-            return _wedge_index(ℓ, m, mp, mp_max)
-        else:
-            return _wedge_index(ℓ, mp, m, mp_max)
 
 
 @jit
@@ -186,19 +128,19 @@ def _step_2(g, h, n_max, mp_max, Hwedge, Hextra, Hv, cosβ, sinβ):
     """
     prefactor = np.empty_like(sinβ)
     # n = 1
-    n0n_index = wedge_index(1, 0, 1, mp_max)
+    n0n_index = WignerHindex(1, 0, 1, mp_max)
     nn_index = nm_index(1, 1)
     Hwedge[n0n_index, :] = sqrt3  # Un-normalized
     Hwedge[n0n_index-1, :] = (g[nn_index-1] * cosβ) * inverse_sqrt2  # Normalized
     # n = 2, ..., n_max+1
     for n in range(2, n_max+2):
         if n <= n_max:
-            n0n_index = wedge_index(n, 0, n, mp_max)
+            n0n_index = WignerHindex(n, 0, n, mp_max)
             H = Hwedge
         else:
             n0n_index = n
             H = Hextra
-        nm10nm1_index = wedge_index(n-1, 0, n-1, mp_max)
+        nm10nm1_index = WignerHindex(n-1, 0, n-1, mp_max)
         nn_index = nm_index(n, n)
         const = np.sqrt(1.0 + 0.5/n)
         gi = g[nn_index-1]
@@ -226,19 +168,19 @@ def _step_2(g, h, n_max, mp_max, Hwedge, Hextra, Hv, cosβ, sinβ):
             H[n0n_index-n+i, :] *= prefactor
         # Supply extra edge cases as noted in docstring
         if n <= n_max:
-            Hv[nm_index(n, 1), :] = Hwedge[wedge_index(n, 0, 1, mp_max)]
-            Hv[nm_index(n, 0), :] = Hwedge[wedge_index(n, 0, 1, mp_max)]
+            Hv[nm_index(n, 1), :] = Hwedge[WignerHindex(n, 0, 1, mp_max)]
+            Hv[nm_index(n, 0), :] = Hwedge[WignerHindex(n, 0, 1, mp_max)]
     # Correct normalization of m=n elements
     prefactor[:] = 1.0
     for n in range(1, n_max+1):
         prefactor *= sinβ
-        Hwedge[wedge_index(n, 0, n, mp_max), :] *= prefactor / np.sqrt(4*n+2)
+        Hwedge[WignerHindex(n, 0, n, mp_max), :] *= prefactor / np.sqrt(4*n+2)
     for n in [n_max+1]:
         prefactor *= sinβ
         Hextra[n, :] *= prefactor / np.sqrt(4*n+2)
     # Supply extra edge cases as noted in docstring
-    Hv[nm_index(1, 1), :] = Hwedge[wedge_index(1, 0, 1, mp_max)]
-    Hv[nm_index(1, 0), :] = Hwedge[wedge_index(1, 0, 1, mp_max)]
+    Hv[nm_index(1, 1), :] = Hwedge[WignerHindex(1, 0, 1, mp_max)]
+    Hv[nm_index(1, 0), :] = Hwedge[WignerHindex(1, 0, 1, mp_max)]
 
 
 @jit
@@ -253,9 +195,9 @@ def _step_3(a, b, n_max, mp_max, Hwedge, Hextra, cosβ, sinβ):
     """
     for n in range(1, n_max+1):
         # m = 1, ..., n
-        i1 = wedge_index(n, 1, 1, mp_max)
+        i1 = WignerHindex(n, 1, 1, mp_max)
         if n+1 <= n_max:
-            i2 = wedge_index(n+1, 0, 0, mp_max)
+            i2 = WignerHindex(n+1, 0, 0, mp_max)
             H2 = Hwedge
         else:
             i2 = 0
@@ -292,12 +234,12 @@ def _step_4(d, n_max, mp_max, Hwedge, Hv):
     for n in range(2, n_max+1):
         for mp in range(1, min(n, mp_max)):
             # m = m', ..., n-1
-            # i1 = wedge_index(n, mp+1, mp, mp_max)
-            i1 = wedge_index(n, mp+1, mp+1, mp_max) - 1
-            i2 = wedge_index(n, mp-1, mp, mp_max)
-            # i3 = wedge_index(n, mp, mp-1, mp_max)
-            i3 = wedge_index(n, mp, mp, mp_max) - 1
-            i4 = wedge_index(n, mp, mp+1, mp_max)
+            # i1 = WignerHindex(n, mp+1, mp, mp_max)
+            i1 = WignerHindex(n, mp+1, mp+1, mp_max) - 1
+            i2 = WignerHindex(n, mp-1, mp, mp_max)
+            # i3 = WignerHindex(n, mp, mp-1, mp_max)
+            i3 = WignerHindex(n, mp, mp, mp_max) - 1
+            i4 = WignerHindex(n, mp, mp+1, mp_max)
             i5 = nm_index(n, mp)
             i6 = nm_index(n, mp-1)
             inverse_d5 = 1.0 / d[i5]
@@ -348,13 +290,13 @@ def _step_5(d, n_max, mp_max, Hwedge, Hv):
     for n in range(0, n_max+1):
         for mp in range(0, -min(n, mp_max), -1):
             # m = -m', ..., n-1
-            # i1 = wedge_index(n, mp-1, -mp, mp_max)
-            i1 = wedge_index(n, mp-1, -mp+1, mp_max) - 1
-            # i2 = wedge_index(n, mp+1, -mp, mp_max)
-            i2 = wedge_index(n, mp+1, -mp+1, mp_max) - 1
-            # i3 = wedge_index(n, mp, -mp-1, mp_max)
-            i3 = wedge_index(n, mp, -mp, mp_max) - 1
-            i4 = wedge_index(n, mp, -mp+1, mp_max)
+            # i1 = WignerHindex(n, mp-1, -mp, mp_max)
+            i1 = WignerHindex(n, mp-1, -mp+1, mp_max) - 1
+            # i2 = WignerHindex(n, mp+1, -mp, mp_max)
+            i2 = WignerHindex(n, mp+1, -mp+1, mp_max) - 1
+            # i3 = WignerHindex(n, mp, -mp-1, mp_max)
+            i3 = WignerHindex(n, mp, -mp, mp_max) - 1
+            i4 = WignerHindex(n, mp, -mp+1, mp_max)
             i5 = nm_index(n, mp-1)
             i6 = nm_index(n, mp)
             i7 = nm_index(n, -mp-1)

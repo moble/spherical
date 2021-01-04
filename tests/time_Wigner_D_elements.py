@@ -1,6 +1,6 @@
 #! /usr/bin/env ipython
 
-# Copyright (c) 2020, Michael Boyle
+# Copyright (c) 2021, Michael Boyle
 # See LICENSE file for details: <https://github.com/moble/spherical/blob/master/LICENSE>
 
 import sys

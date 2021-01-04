@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Michael Boyle
+# Copyright (c) 2021, Michael Boyle
 # See LICENSE file for details: <https://github.com/moble/spherical/blob/master/LICENSE>
 
 """Evaluating Wigner D matrices, spin-weighted spherical harmonics, and related.
@@ -23,217 +23,8 @@ import numba as nb
 from math import factorial
 import os.path
 
-#jit = njit = functools.partial(nb.jit, forceobj=True)
 jit = njit = functools.partial(nb.njit, cache=True)
 jitclass = nb.experimental.jitclass
-
-@njit('i8(i8,i8,i8)')
-def _Wigner_index(twoell, twomp, twom):
-    return twoell*((2*twoell + 3)*twoell + 1) // 6 + (twoell + twomp)//2 * (twoell + 1) + (twoell + twom)//2
-
-def LM_range(ell_min, ell_max):
-    """Array of (ell,m) indices in standard order
-
-    This function returns an array of essentially
-
-    [[ell,m] for ell in range(ell_min, ell_max+1)
-             for m in range(-ell,ell+1)]
-
-    This is, for example, the order assumed for mode data in the `waveforms`
-    module.
-
-    """
-    # # Sympy commands to calculate the total size:
-    # from sympy import symbols, summation
-    # ell_min,ell,ell_max = symbols('ell_min,ell,ell_max', integer=True)
-    # summation((2*ell + 1), (ell, ell_min, ell_max))
-    LM = np.empty((ell_max * (ell_max + 2) - ell_min ** 2 + 1, 2), dtype=np.int64)
-    _LM_range(ell_min, ell_max, LM)
-    return LM
-
-
-@njit('void(i8,i8,i8[:,:])')
-def _LM_range(ell_min, ell_max, LM):
-    i = 0
-    for ell in range(ell_min, ell_max + 1):
-        for m in range(-ell, ell + 1):
-            LM[i, 0] = ell
-            LM[i, 1] = m
-            i += 1
-
-
-@njit('i8(i8,i8,i8)')
-def LM_index(ell, m, ell_min):
-    """Array index for given (ell,m) mode
-
-    Assuming an array of
-
-    [[ell,m] for ell in range(ell_min, ell_max+1)
-             for m in range(-ell,ell+1)]
-
-    this function returns the index of the (ell,m) element.  (Note that
-    ell_max doesn't actually come into this calculation, so it is not taken
-    as an argument to the function.)
-
-    This can be calculated in sympy as
-
-      from sympy import symbols, summation
-      ell,m,ell_min, = symbols('ell,m,ell_min,', integer=True)
-      summation(2*ell + 1, (ell, ell_min, ell-1)) + (ell+m)
-
-    """
-    return ell * (ell + 1) - ell_min ** 2 + m
-
-
-@njit('i8(i8,i8)')
-def LM_total_size(ell_min, ell_max):
-    """Total array size of (ell,m) components
-
-    Assuming an array of
-
-    [[ell,m] for ell in range(ell_min, ell_max+1)
-             for m in range(-ell,ell+1)]
-
-    this function returns the total size of that array.
-
-    This can be calculated in sympy as
-
-      from sympy import symbols, summation
-      ell,ell_min,ell_max = symbols('ell,ell_min,ell_max', integer=True)
-      summation(2*ell + 1, (ell, ell_min, ell_max))
-
-    """
-    return ell_max * (ell_max + 2) - ell_min ** 2 + 1
-
-
-def LM_deduce_ell_max(size, ell_min=0):
-    ell_max = int(np.sqrt(size + ell_min**2) - 1)
-    if ell_max * (ell_max + 2) - ell_min ** 2 + 1 != size:
-        raise ValueError(f"The input size {size} does not correspond to a possible array of modes with ell_min {ell_min}.")
-    return ell_max
-
-
-def LMpM_range(ell_min, ell_max):
-    """Array of (ell,mp,m) indices in standard order
-
-    This function returns an array of essentially
-
-    [[ell,mp,m] for ell in range(ell_min, ell_max+1)
-                for mp in range(-ell,ell+1)
-                for m in range(-ell,ell+1)]
-
-    This is, for instance, the array of indices of the Wigner D matrices
-    constructed by this module.
-
-    """
-    # # Sympy commands to calculate the total size:
-    # from sympy import symbols, summation
-    # ell_min,ell,ell_max = symbols('ell_min,ell,ell_max', integer=True)
-    # summation((2*ell + 1)**2, (ell, ell_min, ell_max))
-    if abs(round(ell_max)-ell_max) > 1e-10 or abs(round(ell_min)-ell_min) > 1e-10:
-        error = ("LMpM_range is only intended for integer values of ell.\n"
-                 + "Input values ell_min={0} and ell_max={1} are not valid.\n".format(ell_min, ell_max)
-                 + "Try `LMpM_range_half_integer` instead.")
-        raise ValueError(error)
-    LMpM = np.empty(((ell_max * (11 + ell_max * (12 + 4 * ell_max)) + ell_min * (1 - 4 * ell_min ** 2) + 3) // 3, 3),
-                    dtype=np.int64)
-    _LMpM_range(ell_min, ell_max, LMpM)
-    return LMpM
-
-@njit('void(i8,i8,i8[:,:])')
-def _LMpM_range(ell_min, ell_max, LMpM):
-    i = 0
-    for ell in range(ell_min, ell_max + 1):
-        for mp in range(-ell, ell + 1):
-            for m in range(-ell, ell + 1):
-                LMpM[i, 0] = ell
-                LMpM[i, 1] = mp
-                LMpM[i, 2] = m
-                i += 1
-
-
-def LMpM_range_half_integer(ell_min, ell_max):
-    """Array of (ell,mp,m) indices in standard order, including half-integer values
-
-    This function returns an array of essentially
-
-    [[twoell/2, twomp/2, twom/2]
-     for twoell in range(2*ell_min, 2(ell_max+1)
-     for twomp in range(-twoell, twoell+1, 2)
-     for twom in range(-twoell, twoell+1, 2)]
-
-    See also: LMpM_range
-
-    """
-    # # Sympy commands to calculate the total size:
-    # from sympy import symbols, summation
-    # twoell_min,twoell,twoell_max = symbols('twoell_min,twoell,twoell_max', integer=True)
-    # summation((twoell + 1)**2, (twoell, twoell_min, twoell_max))
-    LMpM = np.empty((int(((8*ell_max + 18)*ell_max + 13)*ell_max + 3 - ((8 * ell_min + 6) * ell_min + 1)*ell_min) // 3,
-                     3), dtype=np.float64)
-    _LMpM_range_half_integer(round(2*ell_min), round(2*ell_max), LMpM)
-    return LMpM
-
-@njit('void(i8,i8,f8[:,:])')
-def _LMpM_range_half_integer(twoell_min, twoell_max, LMpM):
-    i = 0
-    for twoell in range(twoell_min, twoell_max + 1):
-        for twomp in range(-twoell, twoell + 1, 2):
-            for twom in range(-twoell, twoell + 1, 2):
-                LMpM[i, 0] = twoell / 2
-                LMpM[i, 1] = twomp / 2
-                LMpM[i, 2] = twom / 2
-                i += 1
-
-
-@njit('i8(i8,i8,i8,i8)')
-def LMpM_index(ell, mp, m, ell_min):
-    """Array index for given (ell,mp,m) mode
-
-    Assuming an array (e.g., Wigner D matrices) in the order
-
-    [[ell,mp,m] for ell in range(ell_min, ell_max+1)
-                for mp in range(-ell,ell+1)
-                for m in range(-ell,ell+1)]
-
-    this function returns the index of the (ell,mp,m) element.  (Note that
-    ell_max doesn't actually come into this calculation, so it is not taken
-    as an argument to the function.)
-
-    This can be calculated in sympy as
-
-      from sympy import symbols, summation
-      ell,mp,m,ell_min, = symbols('ell,mp,m,ell_min,', integer=True)
-      summation((2*ell + 1)**2, (ell, ell_min, ell-1)) + (2*ell+1)*(ell+mp) + (ell+m)
-
-    """
-    # raw output is: 4*ell**3/3 + 2*ell**2 + 2*ell*mp + 5*ell/3 - 4*ell_min**3/3 + ell_min/3 + m + mp
-    # We rearrange that to act more nicely
-    return (((4 * ell + 6) * ell + 6 * mp + 5) * ell + ell_min * (1 - 4 * ell_min ** 2) + 3 * (m + mp)) // 3
-
-
-@njit('i8(i8, i8)')
-def LMpM_total_size(ell_min, ell_max):
-    """Total array size of Wigner D matrix
-
-    Assuming an array (e.g., Wigner D matrices) in the order
-
-    [[ell,mp,m] for ell in range(ell_min, ell_max+1)
-                for mp in range(-ell,ell+1)
-                for m in range(-ell,ell+1)]
-
-    this function returns the total size of that array.
-
-    This can be calculated in sympy as
-
-      from sympy import symbols, summation
-      ell,ell_min,ell_max = symbols('ell,ell_min,ell_max', integer=True)
-      summation((2*ell + 1)**2, (ell, ell_min, ell_max))
-
-    """
-    # raw output is: 4*ell_max**3/3 + 4*ell_max**2 + 11*ell_max/3 - 4*ell_min**3/3 + ell_min/3 + 1
-    # We rearrange that to act more nicely
-    return (((4 * ell_max + 12) * ell_max + 11) * ell_max + (-4 * ell_min ** 2 + 1) * ell_min + 3) // 3
 
 
 def theta_phi(n_theta, n_phi):
@@ -268,6 +59,14 @@ from .utilities.mode_conversions import (
 from .utilities.operators import (
     eth_GHP, ethbar_GHP, eth_NP, ethbar_NP, ethbar_inverse_NP
 )
+from .utilities.indexing import (
+    WignerHsize, WignerHrange, WignerHindex,
+    WignerDsize, WignerDrange, WignerDindex,
+    Ysize, Yrange, Yindex,
+)
+LMpM_total_size, LMpM_range, LMpM_index = WignerDsize, WignerDrange, WignerDindex
+LM_total_size, LM_range, LM_index = Ysize, Yrange, Yindex
 from .multiplication import multiply
-from .recursions import complex_powers, Wigner3jCalculator, Wigner3j, clebsch_gordan
+from .recursions import Wigner3jCalculator, Wigner3j, clebsch_gordan
+from .recursions.complex_powers import complex_powers
 from .wigner import Wigner
