@@ -144,15 +144,15 @@ def WignerHindex(ell, mp, m, mp_max=None):
 
 
 @jit
-def WignerDsize(ell_min, mp_max, ell_max):
+def WignerDsize(ell_min, mp_max, ell_max=-1):
     """Compute total size of Wigner 𝔇 matrix
 
     Parameters
     ----------
     ell_min : int
         Integer satisfying 0 <= ell_min <= ell_max
-    mp_max : int
-        Integer satisfying 0 <= mp_max
+    mp_max : int, optional
+        Integer satisfying 0 <= mp_max.  Defaults to ell_max.
     ell_max : int
         Integer satisfying 0 <= ell_min <= ell_max
 
@@ -163,6 +163,7 @@ def WignerDsize(ell_min, mp_max, ell_max):
 
     See Also
     --------
+    WignerDrange : Array of (ℓ, m', m) indices corresponding to the 𝔇 matrix
     WignerDindex : Index of a particular element of the 𝔇 matrix
 
     Notes
@@ -221,6 +222,8 @@ def WignerDsize(ell_min, mp_max, ell_max):
     #     (mp_max, ell_min, ell_max)
     # )
     # print(f"{pycode(nice(WignerDsize_mpmax_ellmin_ellmax.subs(ell_max, ell-1)).factor())}")
+    if ell_max < 0:
+        ell_max = mp_max
     if mp_max >= ell_max:
         return (
             ell_max * (ell_max * (4 * ell_max + 12) + 11)
@@ -242,15 +245,15 @@ def WignerDsize(ell_min, mp_max, ell_max):
 
 
 @jit
-def WignerDrange(ell_min, mp_max, ell_max):
+def WignerDrange(ell_min, mp_max, ell_max=-1):
     """Create an array of (ℓ, m', m) indices as in 𝔇 array
 
     Parameters
     ----------
     ell_min : int
         Integer satisfying 0 <= ell_min <= ell_max
-    mp_max : int
-        Integer satisfying 0 <= mp_max
+    mp_max : int, optional
+        Integer satisfying 0 <= mp_max.  Default is ell_max.
     ell_max : int
         Integer satisfying 0 <= ell_min <= ell_max
 
@@ -271,6 +274,8 @@ def WignerDrange(ell_min, mp_max, ell_max):
         ]
 
     """
+    if ell_max < 0:
+        ell_max = mp_max
     r = np.empty((WignerDsize(ell_min, mp_max, ell_max), 3), dtype=np.int64)
     i = 0
     for ell in range(ell_min, ell_max+1):
@@ -284,23 +289,21 @@ def WignerDrange(ell_min, mp_max, ell_max):
 
 
 @jit
-def WignerDindex(ell_min, mp_max, ell_max, ell, mp, m):
+def WignerDindex(ell, mp, m, ell_min=0, mp_max=-1):
     """Compute index into Wigner 𝔇 matrix
 
     Parameters
     ----------
-    ell_min : int
-        Integer satisfying 0 <= ell_min <= ell_max
-    mp_max : int
-        Integer satisfying 0 <= mp_max
-    ell_max : int
-        Integer satisfying 0 <= ell_min <= ell_max
     ell : int
         Integer satisfying ell_min <= ell <= ell_max
     mp : int
         Integer satisfying -min(ell_max, mp_max) <= mp <= min(ell_max, mp_max)
     m : int
         Integer satisfying -ell <= m <= ell
+    ell_min : int, optional
+        Integer satisfying 0 <= ell_min <= ell_max.  Defaults to 0.
+    mp_max : int, optional
+        Integer satisfying 0 <= mp_max.  Defaults to ell.
 
     Returns
     -------
@@ -310,6 +313,7 @@ def WignerDindex(ell_min, mp_max, ell_max, ell, mp, m):
     See Also
     --------
     WignerDsize : Total size of the 𝔇 matrix
+    WignerDrange : Array of (ℓ, m', m) indices corresponding to the 𝔇 matrix
 
     Notes
     -----
@@ -323,6 +327,8 @@ def WignerDindex(ell_min, mp_max, ell_max, ell, mp, m):
         ]
 
     """
+    if mp_max < 0:
+        mp_max = ell
     i = (mp + min(mp_max, ell)) * (2 * ell + 1) + m + ell
     if ell > ell_min:
         i += WignerDsize(ell_min, mp_max, ell-1)
@@ -347,6 +353,7 @@ def Ysize(ell_min, ell_max):
 
     See Also
     --------
+    Yrange : Array of (ℓ, m) indices corresponding to this array
     Yindex : Index of a particular element of the mode weight array
 
     Notes
@@ -417,17 +424,17 @@ def Yrange(ell_min, ell_max):
 
 
 @jit
-def Yindex(ell_min, ell, m):
+def Yindex(ell, m, ell_min=0):
     """Compute index into array of mode weights
 
     Parameters
     ----------
-    ell_min : int
-        Integer satisfying 0 <= ell_min
     ell : int
         Integer satisfying ell_min <= ell <= ell_max
     m : int
         Integer satisfying -ell <= m <= ell
+    ell_min : int, optional
+        Integer satisfying 0 <= ell_min.  Defaults to 0.
 
     Returns
     -------
@@ -437,6 +444,7 @@ def Yindex(ell_min, ell, m):
     See Also
     --------
     Ysize : Total size of array of mode weights
+    Yrange : Array of (ℓ, m) indices corresponding to this array
 
     Notes
     -----
@@ -464,3 +472,41 @@ def Yindex(ell_min, ell, m):
         return ell*(ell + 1) - ell_min**2 + m
     else:
         return m + ell
+
+
+def theta_phi(n_theta, n_phi):
+    """Construct (theta, phi) grid
+
+    This grid is in the order expected by spinsfast
+
+    Parameters
+    ----------
+    n_theta : int
+        Number of points in the theta direction
+    n_phi : int
+        Number of points in the phi direction
+
+    Returns
+    -------
+    theta_phi_grid : ndarray
+        Array of pairs of floats giving the respective [theta, phi] pairs.  The
+        shape of this array is (n_theta, n_phi, 2).
+
+    Notes
+    -----
+    The array looks like
+
+        [
+            [θ, ϕ]
+            for ϕ ∈ [0, 2π)
+            for θ ∈ [0, π]
+        ]
+
+    (note the open and closed endpoints, respectively), where ϕ and θ are uniformly
+    sampled in their respective ranges.
+
+    """
+    return np.array([[[theta, phi]
+                      for phi in np.linspace(0.0, 2*np.pi, num=n_phi, endpoint=False)]
+                     for theta in np.linspace(0.0, np.pi, num=n_theta, endpoint=True)])
+
