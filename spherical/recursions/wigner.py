@@ -362,9 +362,25 @@ class Wigner:
         self._Dsize = WignerDsize(self.ell_min, self.mp_max, self.ell_max)
         self._Ysize = Ysize(self.ell_min, self.ell_max)
 
-        self.Hwedge = np.empty(self.wedge_size], dtype=float)
-        self.Hv = np.empty((self.n_max+1)**2, dtype=float)
-        self.Hextra = np.empty(self.n_max+2, dtype=float)
+        self.workspace = self.new_workspace()
+
+    def new_workspace(self):
+        """Return a new empty array providing workspace for calculating H"""
+        return np.empty(self.Hsize + (self.ell_max+1)**2 + self.ell_max+2, dtype=float)
+
+    def _split_workspace(self, workspace):
+        size1 = self.Hsize
+        size2 = (self.ell_max+1)**2
+        size3 = self.ell_max+2
+        i1 = size1
+        i2 = i1 + size2
+        i3 = i2 + size3
+        if workspace.size < i3:
+            raise ValueError(f"Input workspace has size {workspace.size}, but {i3} is needed")
+        Hwedge = workspace[:i1]
+        Hv = workspace[i1:i2]
+        Hextra = workspace[i1:i3]
+        return Hwedge, Hv, Hextra
 
     @property
     def Hsize(self):
@@ -546,8 +562,13 @@ class Wigner:
         """
         return Yindex(self.ell_min, ell, m)
 
-    def H(self, expiβ):
+    def H(self, expiβ, workspace=None):
         """Compute a quarter of the H matrix
+
+        WARNING: The returned array will be a view into the `workspace` variable (see
+        below for an explanation of that).  If you need to call this function again
+        using the same workspace before extracting all information from the first call,
+        you should use `numpy.copy` to make a separate copy of the result.
 
         Parameters
         ----------
@@ -558,6 +579,11 @@ class Wigner:
         -------
         Hwedge : array
             This is a 1-dimensional array of floats; see below.
+        workspace : array_like, optional
+            A working array like the one returned by Wigner.new_workspace().  If not
+            present, this object's default workspace will be used.  Note that it is not
+            safe to use the same workspace on multiple threads.  Also see the WARNING
+            above.
 
         See Also
         --------
@@ -591,14 +617,16 @@ class Wigner:
         elements.
 
         """
-        _step_1(self.Hwedge)
-        _step_2(self.g, self.h, self.n_max, self.mp_max, self.Hwedge, self.Hextra, self.Hv, expiβ.real)
-        _step_3(self.a, self.b, self.n_max, self.mp_max, self.Hwedge, self.Hextra, expiβ.real, expiβ.imag)
-        _step_4(self.d, self.n_max, self.mp_max, self.Hwedge, self.Hv)
-        _step_5(self.d, self.n_max, self.mp_max, self.Hwedge, self.Hv)
-        return self.Hwedge
+        workspace = workspace or self.workspace
+        Hwedge, Hv, Hextra = self._split_workspace(workspace)
+        _step_1(Hwedge)
+        _step_2(self.g, self.h, self.ell_max, self.mp_max, Hwedge, Hextra, Hv, expiβ.real)
+        _step_3(self.a, self.b, self.ell_max, self.mp_max, Hwedge, Hextra, expiβ.real, expiβ.imag)
+        _step_4(self.d, self.ell_max, self.mp_max, Hwedge, Hv)
+        _step_5(self.d, self.ell_max, self.mp_max, Hwedge, Hv)
+        return Hwedge
 
-    def d(self, expiβ, out=None):
+    def d(self, expiβ, out=None, workspace=None):
         """Compute Wigner's d matrix dˡₘₚ,ₘ(β)
 
         Parameters
@@ -609,6 +637,10 @@ class Wigner:
             Array into which the d values should be written.  It should be an array of
             floats, with size `self.dsize`.  If not present, the array will be created.
             In either case, the array will also be returned.
+        workspace : array_like, optional
+            A working array like the one returned by Wigner.new_workspace().  If not
+            present, this object's default workspace will be used.  Note that it is not
+            safe to use the same workspace on multiple threads.
 
         Returns
         -------
@@ -639,12 +671,12 @@ class Wigner:
             ]
 
         """
-        Hwedge = self.H(expiβ)
+        Hwedge = self.H(expiβ, workspace)
         d = out or np.empty(self.dsize, dtype=float)
         _fill_wigner_d(self.ell_min, self.ell_max, self.mp_max, d, self.Hwedge)
         return d
 
-    def D(self, R, out=None):
+    def D(self, R, out=None, workspace=None):
         """Compute Wigner's 𝔇 matrix
 
         Parameters
@@ -657,6 +689,10 @@ class Wigner:
             Array into which the 𝔇 values should be written.  It should be an array of
             complex, with size `self.Dsize`.  If not present, the array will be
             created.  In either case, the array will also be returned.
+        workspace : array_like, optional
+            A working array like the one returned by Wigner.new_workspace().  If not
+            present, this object's default workspace will be used.  Note that it is not
+            safe to use the same workspace on multiple threads.
 
         Returns
         -------
@@ -690,14 +726,14 @@ class Wigner:
         """
         R = quaternionic.array(R)
         z = R.to_euler_phases
-        Hwedge = self.H(z[1])
+        Hwedge = self.H(z[1], workspace)
         𝔇 = out or np.empty(self.Dsize, dtype=complex)
         zₐpowers = complex_powers(z[0], ell_max)
         zᵧpowers = complex_powers(z[2], ell_max)
         _fill_wigner_D(self.ell_min, self.ell_max, self.mp_max, 𝔇, self.Hwedge, zₐpowers, zᵧpowers)
         return 𝔇
 
-    def sYlm(self, s, R, out=None):
+    def sYlm(self, s, R, out=None, workspace=None):
         """Evaluate (possibly spin-weighted) spherical harmonic
 
         Parameters
@@ -710,6 +746,10 @@ class Wigner:
             Array into which the d values should be written.  It should be an array of
             complex, with size `self.Ysize`.  If not present, the array will be
             created.  In either case, the array will also be returned.
+        workspace : array_like, optional
+            A working array like the one returned by Wigner.new_workspace().  If not
+            present, this object's default workspace will be used.  Note that it is not
+            safe to use the same workspace on multiple threads.
 
         Returns
         -------
@@ -748,7 +788,7 @@ class Wigner:
             )
         R = quaternionic.array(R)
         z = R.to_euler_phases
-        Hwedge = self.H(z[1])
+        Hwedge = self.H(z[1], workspace)
         Y = out or np.empty(self.Dsize, dtype=complex)
         zₐpowers = complex_powers(z[0], ell_max)
         zᵧpowers = complex_powers(z[2], ell_max)
@@ -756,9 +796,9 @@ class Wigner:
         return Y
 
     def rotate(self, modes, R):
+        pass
 
-
-    def evaluate(self, modes, R, out=None):
+    def evaluate(self, modes, R, out=None, workspace=None):
         """Evaluate Modes object as function of rotations
 
         Parameters
@@ -774,6 +814,10 @@ class Wigner:
             array of complex, with shape `modes.shape[:-1]+R.shape[:-1]`.  If not
             present, the array will be created.  In either case, the array will also be
             returned.
+        workspace : array_like, optional
+            A working array like the one returned by Wigner.new_workspace().  If not
+            present, this object's default workspace will be used.  Note that it is not
+            safe to use the same workspace on multiple threads.
 
         Returns
         -------
@@ -818,73 +862,12 @@ class Wigner:
             quaternionic.converters._to_euler_phases(quaternions[i_R], z)
 
             # Compute Wigner H elements for this quaternion
-            Hwedge = self.H(z[1])
+            Hwedge = self.H(z[1], workspace)
 
             raise NotImplementedError("Need separate arguments and logic for ell_min/max of H and of modes")
             _evaluate(mode_weights, function_values[:, i_R], spin_weight, ell_min, ell_max, abs(spin_weight), Hwedge, z[0], z[2])
 
         return function_values.reshape(modes.shape[:-1] + R.shape[:-1])
-
-
-@jit
-def _evaluate(mode_weights, function_values, spin_weight, ell_min, ell_max, mp_max, Hwedge, zₐ, zᵧ):
-    """Helper function for `evaluate`"""
-    z̄ₐ = zₐ.conjugate()
-
-    coefficient = (-1)**spin_weight * ϵ(spin_weight) * zᵧ.conjugate()**spin_weight
-
-    # Loop over all input sets of modes
-    for i_modes in range(mode_weights.shape[0]):
-        f = function_values[i_modes:i_modes+1]
-        fₗₘ = mode_weights[i_modes]
-
-        raise NotImplementedError("Need separate arguments and logic for ell_min/max of H and of modes")
-        for ell in range(max(ell_min, abs(spin_weight)), ell_max+1):
-            # Establish some base indices, relative to which offsets are simple
-            i_fₗₘ = LM_index(ell, 0, ell_min)
-            i_H = _WignerHindex(ell, 0, abs(spin_weight), mp_max)
-            i_Hp = _WignerHindex(ell, spin_weight, abs(spin_weight), mp_max)
-            i_Hm = _WignerHindex(ell, -spin_weight, abs(spin_weight), mp_max)
-
-            # Initialize with m=0 term
-            f_tmp = fₗₘ[i_fₗₘ] * Hwedge[i_H]  # H(ell, -s, 0)
-
-            if ell > 0:
-
-                ϵ_m = (-1)**ell
-
-                # Compute dˡₘ₋ₛ terms recursively for 0<m<l, using symmetries for negative m, and
-                # simultaneously add the mode weights times zᵧᵐ=exp[i(ϕₛ-ϕₐ)m] to the result using
-                # Horner form
-                negative_terms = fₗₘ[i_fₗₘ-ell] * Hwedge[i_Hp + ell - abs(spin_weight)]  # H(ell, -s, -ell)
-                positive_terms = ϵ_m * fₗₘ[i_fₗₘ+ell] * Hwedge[i_Hm + ell - abs(spin_weight)]  # H(ell, -s, ell)
-                for m in range(ell-1, max(0, abs(spin_weight)-1), -1):
-                    ϵ_m *= -1
-                    negative_terms *= z̄ₐ
-                    negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[i_Hp + m - abs(spin_weight)]  # H(ell, -s, -m)
-                    positive_terms *= zₐ
-                    positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[i_Hm + m - abs(spin_weight)]  # H(ell, -s, m)
-                if spin_weight >= 0:
-                    for m in range(max(0, abs(spin_weight)-1), 0, -1):
-                        ϵ_m *= -1
-                        negative_terms *= z̄ₐ
-                        negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[_WignerHindex(ell, m, spin_weight, mp_max)]  # H(ell, -s, -m)
-                        positive_terms *= zₐ
-                        positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[_WignerHindex(ell, -m, spin_weight, mp_max)]  # H(ell, -s, m)
-                else:
-                    for m in range(max(0, abs(spin_weight)-1), 0, -1):
-                        ϵ_m *= -1
-                        negative_terms *= z̄ₐ
-                        negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[_WignerHindex(ell, -m, -spin_weight, mp_max)]  # H(ell, -s, -m)
-                        positive_terms *= zₐ
-                        positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[_WignerHindex(ell, m, -spin_weight, mp_max)]  # H(ell, -s, m)
-                f_tmp += negative_terms * z̄ₐ
-                f_tmp += positive_terms * zₐ
-
-            f_tmp *= np.sqrt((2 * ell + 1) * inverse_4pi)
-            f += f_tmp
-
-        f *= coefficient
 
 
 @jit
@@ -953,3 +936,64 @@ def _fill_sYlm(ell_min, ell_max, s, Y, Hwedge, zₐpowers, zᵧpowers):
             i_H = wedge_index(ell, mp, m, mp_max)
             Y[i_D] = coefficient * ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[m] * zₐpowers[mp]
             i_D += 1
+
+
+@jit
+def _evaluate(mode_weights, function_values, spin_weight, ell_min, ell_max, mp_max, Hwedge, zₐ, zᵧ):
+    """Helper function for Wigner.evaluate"""
+    i0 = max(0, abs(spin_weight)-1)
+    z̄ₐ = zₐ.conjugate()
+    coefficient = (-1)**spin_weight * ϵ(spin_weight) * zᵧ.conjugate()**spin_weight
+
+    # Loop over all input sets of modes
+    for i_modes in range(mode_weights.shape[0]):
+        f = function_values[i_modes:i_modes+1]
+        fₗₘ = mode_weights[i_modes]
+
+        raise NotImplementedError("Need separate arguments and logic for ell_min/max of H and of modes")
+        for ell in range(max(ell_min, abs(spin_weight)), ell_max+1):
+            # Establish some base indices, relative to which offsets are simple
+            i_fₗₘ = Yindex(ell_min, ell, 0)
+            i_H = _WignerHindex(ell, 0, abs(spin_weight), mp_max)
+            i_Hp = _WignerHindex(ell, spin_weight, abs(spin_weight), mp_max)
+            i_Hm = _WignerHindex(ell, -spin_weight, abs(spin_weight), mp_max)
+
+            # Initialize with m=0 term
+            f_ell = fₗₘ[i_fₗₘ] * Hwedge[i_H]  # H(ell, -s, 0)
+
+            if ell > 0:
+
+                ϵ_m = (-1)**ell
+
+                # Compute dˡₘ₋ₛ terms recursively for 0<m<l, using symmetries for negative m, and
+                # simultaneously add the mode weights times zᵧᵐ=exp[i(ϕₛ-ϕₐ)m] to the result using
+                # Horner form
+                negative_terms = fₗₘ[i_fₗₘ-ell] * Hwedge[i_Hp + ell - abs(spin_weight)]  # H(ell, -s, -ell)
+                positive_terms = ϵ_m * fₗₘ[i_fₗₘ+ell] * Hwedge[i_Hm + ell - abs(spin_weight)]  # H(ell, -s, ell)
+                for m in range(ell-1, i0, -1):  # |s| ≤ m < ell
+                    ϵ_m *= -1
+                    negative_terms *= z̄ₐ
+                    negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[i_Hp + m - abs(spin_weight)]  # H(ell, -s, -m)
+                    positive_terms *= zₐ
+                    positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[i_Hm + m - abs(spin_weight)]  # H(ell, -s, m)
+                if spin_weight >= 0:
+                    for m in range(i0, 0, -1):  # 0 < m < |s|
+                        ϵ_m *= -1
+                        negative_terms *= z̄ₐ
+                        negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[_WignerHindex(ell, m, spin_weight, mp_max)]  # H(ell, -s, -m)
+                        positive_terms *= zₐ
+                        positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[_WignerHindex(ell, -m, spin_weight, mp_max)]  # H(ell, -s, m)
+                else:
+                    for m in range(i0, 0, -1):  # 0 < m < |s|
+                        ϵ_m *= -1
+                        negative_terms *= z̄ₐ
+                        negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[_WignerHindex(ell, -m, -spin_weight, mp_max)]  # H(ell, -s, -m)
+                        positive_terms *= zₐ
+                        positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[_WignerHindex(ell, m, -spin_weight, mp_max)]  # H(ell, -s, m)
+                f_ell += negative_terms * z̄ₐ
+                f_ell += positive_terms * zₐ
+
+            f_ell *= np.sqrt((2 * ell + 1) * inverse_4pi)
+            f += f_ell
+
+        f *= coefficient
