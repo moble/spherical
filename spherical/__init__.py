@@ -17,9 +17,6 @@ except ModuleNotFoundError:  # pragma: no cover
 
 __version__ = importlib_metadata.version(__name__)
 
-__all__ = ['Wigner3j', 'Wigner_D_element', 'Wigner_D_matrices', 'SWSH', 'SWSH_grid',
-           'factorial', 'binomial_coefficient', 'ladder_operator_coefficient']
-
 import functools
 import numpy as np
 import numba as nb
@@ -30,62 +27,9 @@ import os.path
 jit = njit = functools.partial(nb.njit, cache=True)
 jitclass = nb.experimental.jitclass
 
-# Module constants
-ell_max = 32  # More than 29, and you get roundoff building quickly
-epsilon = 1.e-15
-error_on_bad_indices = True
-
-# The coefficient files
-#   binomial_coefficients.npy
-#   ladder_operator_coefficients.npy
-#   Wigner_coefficients.npy
-# were originally produced with the code in `_generate_coefficients.py`.
-
-
-# Factorial
-factorials = np.array([float(factorial(i)) for i in range(171)])
-
-
-@njit('f8(i8)')
-def factorial(i):
-    return factorials[i]
-
-
-# Binomial coefficients
-_binomial_coefficients = np.load(os.path.join(os.path.dirname(__file__), 'binomial_coefficients.npy'))
-
-@njit('f8(i8,i8)')
-def binomial_coefficient(n, k):
-    return _binomial_coefficients[(n * (n + 1)) // 2 + k]
-
-
-# Ladder-operator coefficients
-_ladder_operator_coefficients = np.load(os.path.join(os.path.dirname(__file__), 'ladder_operator_coefficients.npy'))
-
-@njit('f8(i8,i8)')
-def _ladder_operator_coefficient(twoell, twom):
-    return _ladder_operator_coefficients[((twoell + 2) * twoell + twom) // 2]
-
-@njit('f8(f8,f8)')
-def ladder_operator_coefficient(ell, m):
-    return _ladder_operator_coefficient(round(2*ell), round(2*m))
-
-
-# Coefficients used in constructing the Wigner D matrices
-_Wigner_coefficients = np.load(os.path.join(os.path.dirname(__file__), 'Wigner_coefficients.npy'))
-
 @njit('i8(i8,i8,i8)')
 def _Wigner_index(twoell, twomp, twom):
     return twoell*((2*twoell + 3)*twoell + 1) // 6 + (twoell + twomp)//2 * (twoell + 1) + (twoell + twom)//2
-
-@njit('f8(i8,i8,i8)')
-def _Wigner_coefficient(twoell, twomp, twom):
-    return _Wigner_coefficients[_Wigner_index(twoell, twomp, twom)]
-
-@njit('f8(f8,f8,f8)')
-def Wigner_coefficient(ell, mp, m):
-    return _Wigner_coefficient(round(2*ell), round(2*mp), round(2*m))
-
 
 def LM_range(ell_min, ell_max):
     """Array of (ell,m) indices in standard order
@@ -315,17 +259,15 @@ def theta_phi(n_theta, n_phi):
                       for phi in np.linspace(0.0, 2*np.pi, num=n_phi, endpoint=False)]
                      for theta in np.linspace(0.0, np.pi, num=n_theta, endpoint=True)])
 
-
-from .WignerD import (Wigner_D_element, _Wigner_D_element,
-                      Wigner_D_matrices, _Wigner_D_matrices,
-                      _linear_matrix_index, _linear_matrix_diagonal_index,
-                      _linear_matrix_offset, _total_size_D_matrices)
-from .SWSH import SWSH, SWSH_grid, _SWSH  # sYlm, Ylm
-from .SWSH_modes import Modes
-from .SWSH_grids import Grid
-from .mode_conversions import (constant_as_ell_0_mode, constant_from_ell_0_mode,
-                               vector_as_ell_1_modes, vector_from_ell_1_modes,
-                               eth_GHP, ethbar_GHP, eth_NP, ethbar_NP,
-                               ethbar_inverse_NP)
+from .modes import Modes
+from .grid import Grid
+from .utilities.mode_conversions import (
+    constant_as_ell_0_mode, constant_from_ell_0_mode,
+    vector_as_ell_1_modes, vector_from_ell_1_modes,
+)
+from .utilities.operators import (
+    eth_GHP, ethbar_GHP, eth_NP, ethbar_NP, ethbar_inverse_NP
+)
 from .multiplication import multiply
 from .recursions import complex_powers, Wigner3jCalculator, Wigner3j, clebsch_gordan
+from .wigner import Wigner

@@ -17,26 +17,24 @@ nav:
     - ComparingConventions.md
     - ComparingMathematica.md
   - API:
-    - api/spherical/SWSH/__init__.py
-    - api/spherical/SWSH_grids/__init__.py
-    - api/spherical/SWSH_grids/algebra.py
-    - api/spherical/SWSH_grids/ufuncs.py
-    - api/spherical/SWSH_grids/utilities.py
-    - api/spherical/SWSH_modes/__init__.py
-    - api/spherical/SWSH_modes/algebra.py
-    - api/spherical/SWSH_modes/derivatives.py
-    - api/spherical/SWSH_modes/ufuncs.py
-    - api/spherical/SWSH_modes/utilities.py
-    - api/spherical/WignerD/WignerDRecursion.py
-    - api/spherical/WignerD/__init__.py
+    - api/spherical/grid/__init__.py
+    - api/spherical/grid/algebra.py
+    - api/spherical/grid/ufuncs.py
+    - api/spherical/grid/utilities.py
+    - api/spherical/modes/__init__.py
+    - api/spherical/modes/algebra.py
+    - api/spherical/modes/derivatives.py
+    - api/spherical/modes/ufuncs.py
+    - api/spherical/modes/utilities.py
     - api/spherical/__init__.py
-    - api/spherical/mode_conversions.py
     - api/spherical/multiplication.py
     - api/spherical/recursions/__init__.py
-    - api/spherical/recursions/associated_legendre_functions.py
     - api/spherical/recursions/complex_powers.py
     - api/spherical/recursions/wigner3j.py
-    - api/spherical/recursions/wignerH.py 
+    - api/spherical/recursions/wignerH.py
+    - api/spherical/utilities/mode_conversions.py
+    - api/spherical/utilities/operators.py
+    - api/spherical/utilities/indexing.py
 
 
 plugins:
