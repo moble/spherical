@@ -1,6 +1,8 @@
 # Copyright (c) 2021, Michael Boyle
 # See LICENSE file for details: <https://github.com/moble/spherical/blob/master/LICENSE>
 
+"""Submodule providing the Grid object"""
+
 import copy
 import math
 import numpy as np

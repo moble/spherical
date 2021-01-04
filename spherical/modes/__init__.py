@@ -1,11 +1,20 @@
 # Copyright (c) 2021, Michael Boyle
 # See LICENSE file for details: <https://github.com/moble/spherical/blob/master/LICENSE>
 
+"""Submodule providing the Modes object"""
+
 import copy
 import math
 import numpy as np
-from .. import LM_total_size, LM_deduce_ell_max
+from .. import LM_total_size
 from . import evaluate
+
+
+def LM_deduce_ell_max(size, ell_min=0):
+    ell_max = int(np.sqrt(size + ell_min**2) - 1)
+    if ell_max * (ell_max + 2) - ell_min ** 2 + 1 != size:
+        raise ValueError(f"The input size {size} does not correspond to a possible array of modes with ell_min {ell_min}.")
+    return ell_max
 
 
 class Modes(np.ndarray):
