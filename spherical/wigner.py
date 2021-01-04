@@ -4,9 +4,8 @@
 import numpy as np
 import quaternionic
 
-from . import jit
-from .recursions import complex_powers
-from .utilities import WignerHsize, WignerDsize, Ysize
+from . import jit, complex_powers, WignerHsize, WignerDsize, Ysize
+from .recursions.wignerH import _step_1, _step_2, _step_3, _step_4, _step_5
 
 inverse_4pi = 1.0 / (4 * np.pi)
 
@@ -198,7 +197,7 @@ class Wigner:
             ]
 
         """
-        return WignerDindex(self.ell_min, self.mp_max, self.ell_max, ell, mp, m)
+        return WignerDindex(ell, mp, m, self.ell_min, self.mp_max)
 
     def Yindex(self, ell, m):
         """Compute index into array of mode weights
