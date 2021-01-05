@@ -4,10 +4,36 @@
 import numpy as np
 import quaternionic
 
-from . import jit, complex_powers, WignerHsize, WignerDsize, Ysize
-from .recursions.wignerH import _step_1, _step_2, _step_3, _step_4, _step_5
+from . import jit, complex_powers, WignerHsize, WignerHindex, WignerDsize, WignerDindex, Ysize, Yindex
+from .recursions.wignerH import ϵ, _step_1, _step_2, _step_3, _step_4, _step_5
 
 inverse_4pi = 1.0 / (4 * np.pi)
+
+
+def wigner_d(expiβ, ell_min, ell_max, out=None, workspace=None):
+    """Compute Wigner's d matrix dˡₘₚ,ₘ(β)
+
+    This is a simple wrapper for the Wigner.d method.  If you plan on calling this
+    function more than once, you should probably construct a Wigner object and call
+    the `d` method explicitly.
+
+    See that function's documentation for more details.
+
+    """
+    return Wigner(ell_max, ell_min).d(expiβ, out=out, workspace=workspace)
+
+
+def wigner_D(R, ell_min, ell_max, out=None, workspace=None):
+    """Compute Wigner's 𝔇 matrix 𝔇ˡₘₚ,ₘ(R)
+
+    This is a simple wrapper for the Wigner.D method.  If you plan on calling this
+    function more than once, you should probably construct a Wigner object and call
+    the `D` method explicitly.
+
+    See that function's documentation for more details.
+
+    """
+    return Wigner(ell_max, ell_min).D(R, out=out, workspace=workspace)
 
 
 class Wigner:
@@ -300,7 +326,7 @@ class Wigner:
         elements.
 
         """
-        workspace = workspace or self.workspace
+        workspace = workspace if workspace is not None else self.workspace
         Hwedge, Hv, Hextra = self._split_workspace(workspace)
         _step_1(Hwedge)
         _step_2(self.g, self.h, self.ell_max, self.mp_max, Hwedge, Hextra, Hv, expiβ.real, expiβ.imag)
@@ -355,8 +381,8 @@ class Wigner:
 
         """
         Hwedge = self.H(expiβ, workspace)
-        d = out or np.empty(self.dsize, dtype=float)
-        _fill_wigner_d(self.ell_min, self.ell_max, self.mp_max, d, self.Hwedge)
+        d = out if out is not None else np.empty(self.dsize, dtype=float)
+        _fill_wigner_d(self.ell_min, self.ell_max, self.mp_max, d, Hwedge)
         return d
 
     def D(self, R, out=None, workspace=None):
@@ -410,10 +436,10 @@ class Wigner:
         R = quaternionic.array(R)
         z = R.to_euler_phases
         Hwedge = self.H(z[1], workspace)
-        𝔇 = out or np.empty(self.Dsize, dtype=complex)
-        zₐpowers = complex_powers(z[0], ell_max)
-        zᵧpowers = complex_powers(z[2], ell_max)
-        _fill_wigner_D(self.ell_min, self.ell_max, self.mp_max, 𝔇, self.Hwedge, zₐpowers, zᵧpowers)
+        𝔇 = out if out is not None else np.empty(self.Dsize, dtype=complex)
+        zₐpowers = complex_powers(z[0], self.ell_max)
+        zᵧpowers = complex_powers(z[2], self.ell_max)
+        _fill_wigner_D(self.ell_min, self.ell_max, self.mp_max, 𝔇, Hwedge, zₐpowers, zᵧpowers)
         return 𝔇
 
     def sYlm(self, s, R, out=None, workspace=None):
@@ -472,10 +498,10 @@ class Wigner:
         R = quaternionic.array(R)
         z = R.to_euler_phases
         Hwedge = self.H(z[1], workspace)
-        Y = out or np.empty(self.Dsize, dtype=complex)
-        zₐpowers = complex_powers(z[0], ell_max)
-        zᵧpowers = complex_powers(z[2], ell_max)
-        _fill_sYlm(self.ell_min, self.ell_max, s, Y, self.Hwedge, zₐpowers, zᵧpowers)
+        Y = out if out is not None else np.empty(self.Ysize, dtype=complex)
+        zₐpowers = complex_powers(z[0], self.ell_max)
+        zᵧpowers = complex_powers(z[2], self.ell_max)
+        _fill_sYlm(self.ell_min, self.ell_max, self.mp_max, s, Y, Hwedge, zₐpowers, zᵧpowers)
         return Y
 
     def rotate(self, modes, R):
@@ -537,7 +563,11 @@ class Wigner:
 
         # Construct storage space
         z = np.empty(3, dtype=complex)
-        function_values = out or np.zeros(mode_weights.shape[:-1] + quaternions.shape[:-1], dtype=complex)
+        function_values = (
+            out
+            if out is not None
+            else np.zeros(mode_weights.shape[:-1] + quaternions.shape[:-1], dtype=complex)
+        )
 
         # Loop over all input quaternions
         for i_R in range(quaternions.shape[0]):
@@ -559,8 +589,8 @@ def _fill_wigner_d(ell_min, ell_max, mp_max, d, Hwedge):
     for ell in range(ell_min, ell_max+1):
         for mp in range(-ell, ell+1):
             for m in range(-ell, ell+1):
-                i_d = LMpM_index(ell, mp, m, ell_min)
-                i_H = wedge_index(ell, mp, m, mp_max)
+                i_d = WignerDindex(ell, mp, m, ell_min)
+                i_H = WignerHindex(ell, mp, m, mp_max)
                 d[i_d] = ϵ(mp) * ϵ(-m) * Hwedge[i_H]
 
 
@@ -574,51 +604,57 @@ def _fill_wigner_D(ell_min, ell_max, mp_max, 𝔇, Hwedge, zₐpowers, zᵧpower
     # exp[i(ϕₛ-ϕₐ)] = zp * zm = z[0] = zₐ
     for ell in range(ell_min, ell_max+1):
         for mp in range(-ell, 0):
-            i_D = LMpM_index(ell, mp, -ell, ell_min)
+            i_D = WignerDindex(ell, mp, -ell, ell_min)
             for m in range(-ell, 0):
-                i_H = wedge_index(ell, mp, m, mp_max)
+                i_H = WignerHindex(ell, mp, m, mp_max)
                 𝔇[i_D] = ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[-m].conjugate() * zₐpowers[-mp].conjugate()
                 i_D += 1
             for m in range(0, ell+1):
-                i_H = wedge_index(ell, mp, m, mp_max)
+                i_H = WignerHindex(ell, mp, m, mp_max)
                 𝔇[i_D] = ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[m] * zₐpowers[-mp].conjugate()
                 i_D += 1
         for mp in range(0, ell+1):
-            i_D = LMpM_index(ell, mp, -ell, ell_min)
+            i_D = WignerDindex(ell, mp, -ell, ell_min)
             for m in range(-ell, 0):
-                i_H = wedge_index(ell, mp, m, mp_max)
+                i_H = WignerHindex(ell, mp, m, mp_max)
                 𝔇[i_D] = ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[-m].conjugate() * zₐpowers[mp]
                 i_D += 1
             for m in range(0, ell+1):
-                i_H = wedge_index(ell, mp, m, mp_max)
+                i_H = WignerHindex(ell, mp, m, mp_max)
                 𝔇[i_D] = ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[m] * zₐpowers[mp]
                 i_D += 1
 
 
 @jit
-def _fill_sYlm(ell_min, ell_max, s, Y, Hwedge, zₐpowers, zᵧpowers):
+def _fill_sYlm(ell_min, ell_max, mp_max, s, Y, Hwedge, zₐpowers, zᵧpowers):
     """Helper function for Wigner.sYlm"""
+    # import warnings
+    # warnings.warn("Jit commented out temporarily for debugging")
     mp = -s
     for ell in range(ell_min, ell_max+1):
         coefficient = (-1)**s * np.sqrt((2 * ell + 1) * inverse_4pi)
-        i_D = LMpM_index(ell, mp, -ell, ell_min)
+        i_Y = Yindex(ell, -ell, ell_min)
         for m in range(-ell, 0):
-            i_H = wedge_index(ell, mp, m, mp_max)
-            Y[i_D] = coefficient * ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[-m].conjugate() * zₐpowers[-mp].conjugate()
-            i_D += 1
+            i_H = WignerHindex(ell, mp, m, mp_max)
+            # print(1, Y.shape, i_Y, ell, mp, m, mp_max, ell_min, ell_max, s)
+            Y[i_Y] = coefficient * ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[-m].conjugate() * zₐpowers[-mp].conjugate()
+            i_Y += 1
         for m in range(0, ell+1):
-            i_H = wedge_index(ell, mp, m, mp_max)
-            Y[i_D] = coefficient * ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[m] * zₐpowers[-mp].conjugate()
-            i_D += 1
-        i_D = LMpM_index(ell, mp, -ell, ell_min)
+            i_H = WignerHindex(ell, mp, m, mp_max)
+            # print(2, Y.shape, i_Y, ell, mp, m, mp_max, ell_min, ell_max, s)
+            Y[i_Y] = coefficient * ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[m] * zₐpowers[-mp].conjugate()
+            i_Y += 1
+        i_Y = Yindex(ell, -ell, ell_min)
         for m in range(-ell, 0):
-            i_H = wedge_index(ell, mp, m, mp_max)
-            Y[i_D] = coefficient * ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[-m].conjugate() * zₐpowers[mp]
-            i_D += 1
+            i_H = WignerHindex(ell, mp, m, mp_max)
+            # print(3, Y.shape, i_Y, ell, mp, m, mp_max, ell_min, ell_max, s)
+            Y[i_Y] = coefficient * ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[-m].conjugate() * zₐpowers[mp]
+            i_Y += 1
         for m in range(0, ell+1):
-            i_H = wedge_index(ell, mp, m, mp_max)
-            Y[i_D] = coefficient * ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[m] * zₐpowers[mp]
-            i_D += 1
+            i_H = WignerHindex(ell, mp, m, mp_max)
+            # print(4, Y.shape, i_Y, ell, mp, m, mp_max, ell_min, ell_max, s)
+            Y[i_Y] = coefficient * ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[m] * zₐpowers[mp]
+            i_Y += 1
 
 
 @jit

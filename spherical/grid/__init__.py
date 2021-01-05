@@ -11,69 +11,80 @@ import numpy as np
 class Grid(np.ndarray):
     """Object to store SWHS values on a grid
 
-    This class subclasses numpy's ndarray object, so that it should act like a numpy array in many
-    respects, even with functions like np.zeros_like.
+    This class subclasses numpy's ndarray object, so that it should act like a
+    numpy array in many respects, even with functions like np.zeros_like.
 
-    NOTE: The functions `np.copy(grid)` and `np.array(grid, copy=True)` return `ndarray` objects;
-    they lose information about the SWSH attributes, and have different ufuncs.  If you wish to keep
-    this information, use `grid.copy()`.  Also note that pickling works as expected, as do copy.copy
-    and copy.deepcopy.
+    NOTE: The functions `np.copy(grid)` and `np.array(grid, copy=True)` return
+    `ndarray` objects; they lose information about the SWSH attributes, and have
+    different ufuncs.  If you wish to keep this information, use `grid.copy()`.
+    Also note that pickling works as expected, as do copy.copy and copy.deepcopy.
 
-    The number of dimensions is arbitrary as long as it is 2 or more, but the grid must be stored in
-    the last 2 axes.  Specifically, the grid must have shape (n_theta, n_phi).  (See the function
-    `spherical.theta_phi` for an example of the actual grid locations expected.)  For
-    example, a SWSH function of time may be stored as a 3-d array where the first axis represents
-    different times, and the second and third axes represent the function values at each instant of
+    The number of dimensions is arbitrary as long as it is 2 or more, but the grid
+    must be stored in the last 2 axes.  Specifically, the grid must have shape
+    (n_theta, n_phi).  (See the function `spherical.theta_phi` for an example of
+    the actual grid locations expected.)  For example, a SWSH function of time may
+    be stored as a 3-d array where the first axis represents different times, and
+    the second and third axes represent the function values at each instant of
     time.
 
     This class also does two important things that are unlike numpy arrays:
 
     1) It tracks the spin weight of the function represented by this data.
 
-    2) It overrides most of numpy's "universal functions" (ufuncs) to work appropriately for
-       spin-weighted functions.  Specifically, these ufuncs are interpreted as acting on the
-       spin-weighted function itself, rather than just the grid values.  The returned values are --
-       where possible -- Grid objects.  Most importantly, we have these overriden methods:
+    2) It overrides most of numpy's "universal functions" (ufuncs) to work
+       appropriately for spin-weighted functions.  Specifically, these ufuncs are
+       interpreted as acting on the spin-weighted function itself, rather than just
+       the grid values.  The returned values are -- where possible -- Grid objects.
+       Most importantly, we have these overriden methods:
 
-       a) Multiplying two Grid objects will result in a new Grid object that represents the
-          pointwise product of the functions themselves (and will correctly have spin weight given
-          by the sum of the spin weights of the first two functions).  Division is only permitted
-          when the divisor has spin weight zero.
+       a) Multiplying two Grid objects will result in a new Grid object that
+          represents the pointwise product of the functions themselves (and will
+          correctly have spin weight given by the sum of the spin weights of the
+          first two functions).  Division is only permitted when the divisor has
+          spin weight zero.
 
-       b) Addition (and subtraction) is permitted for functions of the same spin weight, but it does
-          not make sense to add (or subtract) functions with different spin weights, so any attempt
-          to do so raises a ValueError.
+       b) Addition (and subtraction) is permitted for functions of the same spin
+          weight, but it does not make sense to add (or subtract) functions with
+          different spin weights, so any attempt to do so raises a ValueError.
 
-       Note that a constant is implicitly a function of spin weight zero, and is treated as such.
+       Note that a constant is implicitly a function of spin weight zero, and is
+       treated as such.
 
-       Numerous other ufuncs -- such as log, exp, trigonometric ufuncs, bit-twiddling ufuncs, and so
-       on -- are disabled because they don't result in objects of specific spin weights.
+       Numerous other ufuncs -- such as log, exp, trigonometric ufuncs,
+       bit-twiddling ufuncs, and so on -- are disabled because they don't result in
+       objects of specific spin weights.
 
-    It is possible to treat the underlying data of a Grid object `grid` as an ordinary numpy array
-    by taking `grid.view(np.ndarray)`.  However, it is hoped that this class already performs all
-    reasonable operations.  If you find a missing feature that requires you to resort to this,
-    please feel free to open an issue in this project's github page to discuss it.
+    It is possible to treat the underlying data of a Grid object `grid` as an
+    ordinary numpy array by taking `grid.view(np.ndarray)`.  However, it is hoped
+    that this class already performs all reasonable operations.  If you find a
+    missing feature that requires you to resort to this, please feel free to open
+    an issue in this project's github page to discuss it.
 
-    Also, be aware that ndarrays also have various built-in methods that cannot be overridden very
-    easily, such as max, copysign, etc.  If you try to use -- even indirectly -- those functions
-    that don't have any clear interpretation for spin-weighted functions, things will likely break.
-
-
-    Constructor parameters
-    ======================
-    input_array: array_like
-        This may be a numpy ndarray, or any subclass.  It must be able to be viewed as complex.  If
-        it has a `_metadata` attribute, that field will be copied to the new array; if the following
-        parameters are not passed to the constructor, they will be searched for in the metadata.
-    spin_weight: int [optional if present in `input_array._metadata`]
-        The spin weight of the function that this Modes object describes.  This must be specified
-        somehow, whether via a `_metadata` attribute of the input array, or as a keyword argument,
-        or as the second positional argument (where the latter will override the former values).
+    Also, be aware that ndarrays also have various built-in methods that cannot be
+    overridden very easily, such as max, copysign, etc.  If you try to use -- even
+    indirectly -- those functions that don't have any clear interpretation for
+    spin-weighted functions, things will likely break.
 
     """
 
     # https://numpy.org/doc/1.18/user/basics.subclassing.html
     def __new__(cls, input_array, *args, **kwargs):
+        """Construct new Grid object
+
+        Parameters
+        ----------
+        input_array : array_like
+            This may be a numpy ndarray, or any subclass.  It must be able to be viewed
+            as complex.  If it has a `_metadata` attribute, that field will be copied
+            to the new array; if the following parameters are not passed to the
+            constructor, they will be searched for in the metadata.
+        spin_weight : int [optional if present in `input_array._metadata`]
+            The spin weight of the function that this Modes object describes.  This
+            must be specified somehow, whether via a `_metadata` attribute of the input
+            array, or as a keyword argument, or as the second positional argument
+            (where the latter will override the former values).
+
+        """
         if len(args) > 1:
             raise ValueError("Only one positional argument is recognized")
         elif len(args) == 1:

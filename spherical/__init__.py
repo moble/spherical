@@ -30,8 +30,6 @@ __version__ = importlib_metadata.version(__name__)
 import functools
 import numpy as np
 import numba as nb
-from math import factorial
-import os.path
 
 jit = njit = functools.partial(nb.njit, cache=True)
 jitclass = nb.experimental.jitclass
@@ -55,7 +53,8 @@ from .utilities.operators import (
 from .recursions.complex_powers import complex_powers
 from .recursions.wigner3j import Wigner3jCalculator, Wigner3j, clebsch_gordan
 
-from .wigner import Wigner
+from .wigner import Wigner, wigner_d, wigner_D
+from .swshs import SWSH, SWSH_grid
 
 from .multiplication import multiply
 

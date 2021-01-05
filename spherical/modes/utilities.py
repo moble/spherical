@@ -71,17 +71,17 @@ def grid(self, n_theta=None, n_phi=None, **kwargs):
         output
 
     """
-    raise NotImplementedError()
-    # import copy
-    # import numpy as np
-    # import spinsfast
-    # from .. import Grid
-    # n_theta = n_theta or 2*self.ell_max+1
-    # n_phi = n_phi or n_theta
-    # metadata = copy.copy(self._metadata)
-    # metadata.pop('ell_max', None)
-    # metadata.update(**kwargs)
-    # return Grid(spinsfast.salm2map(self.view(np.ndarray), self.spin_weight, self.ell_max, n_theta, n_phi), **metadata)
+    # raise NotImplementedError()
+    import copy
+    import numpy as np
+    import spinsfast
+    from .. import Grid
+    n_theta = n_theta or 2*self.ell_max+1
+    n_phi = n_phi or n_theta
+    metadata = copy.copy(self._metadata)
+    metadata.pop('ell_max', None)
+    metadata.update(**kwargs)
+    return Grid(spinsfast.salm2map(self.view(np.ndarray), self.spin_weight, self.ell_max, n_theta, n_phi), **metadata)
 
 
 def evaluate(self, rotors, **kwargs):
