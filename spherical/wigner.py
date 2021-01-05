@@ -14,17 +14,12 @@ class Wigner:
     def __init__(self, ell_max, ell_min=0, mp_max=np.iinfo(np.int64).max):
         self.ell_min = int(ell_min)
         self.ell_max = int(ell_max)
-        self.mp_max = min(abs(int(mp_max)), self.ell_min)
+        self.mp_max = min(abs(int(mp_max)), self.ell_max)
 
         if ell_min < 0 or ell_min > ell_max:
             raise ValueError(f"ell_min={ell_min} must be non-negative and no greater than ell_max={ell_max}")
         if ell_max < 0:
             raise ValueError(f"ell_max={ell_max} must be non-negative")
-
-        if mp_max >= ell_max:
-            self.index = self._index
-        else:
-            self.index = self._index_mp_max
 
         self._Hsize = WignerHsize(self.mp_max, self.ell_max)
         self._dsize = WignerDsize(self.ell_min, self.mp_max, self.ell_max)
@@ -32,6 +27,25 @@ class Wigner:
         self._Ysize = Ysize(self.ell_min, self.ell_max)
 
         self.workspace = self.new_workspace()
+
+        n = np.array([n for n in range(self.ell_max+2) for m in range(-n, n+1)])
+        m = np.array([m for n in range(self.ell_max+2) for m in range(-n, n+1)])
+        absn = np.array([n for n in range(self.ell_max+2) for m in range(n+1)])
+        absm = np.array([m for n in range(self.ell_max+2) for m in range(n+1)])
+        self.a = np.sqrt((absn+1+absm) * (absn+1-absm) / ((2*absn+1)*(2*absn+3)))
+        self.b = np.sqrt((n-m-1) * (n-m) / ((2*n-1)*(2*n+1)))
+        self.b[m<0] *= -1
+        self.d = 0.5 * np.sqrt((n-m) * (n+m+1))
+        self.d[m<0] *= -1
+        with np.errstate(divide='ignore', invalid='ignore'):
+            self.g = 2*(m+1) / np.sqrt((n-m)*(n+m+1))
+            self.h = np.sqrt((n+m+2)*(n-m-1) / ((n-m)*(n+m+1)))
+        if not (
+            np.all(np.isfinite(self.a)) and
+            np.all(np.isfinite(self.b)) and
+            np.all(np.isfinite(self.d))
+        ):
+            raise ValueError("Found a non-finite value inside this object")
 
     def new_workspace(self):
         """Return a new empty array providing workspace for calculating H"""
@@ -48,7 +62,7 @@ class Wigner:
             raise ValueError(f"Input workspace has size {workspace.size}, but {i3} is needed")
         Hwedge = workspace[:i1]
         Hv = workspace[i1:i2]
-        Hextra = workspace[i1:i3]
+        Hextra = workspace[i2:i3]
         return Hwedge, Hv, Hextra
 
     @property
@@ -289,7 +303,7 @@ class Wigner:
         workspace = workspace or self.workspace
         Hwedge, Hv, Hextra = self._split_workspace(workspace)
         _step_1(Hwedge)
-        _step_2(self.g, self.h, self.ell_max, self.mp_max, Hwedge, Hextra, Hv, expiβ.real)
+        _step_2(self.g, self.h, self.ell_max, self.mp_max, Hwedge, Hextra, Hv, expiβ.real, expiβ.imag)
         _step_3(self.a, self.b, self.ell_max, self.mp_max, Hwedge, Hextra, expiβ.real, expiβ.imag)
         _step_4(self.d, self.ell_max, self.mp_max, Hwedge, Hv)
         _step_5(self.d, self.ell_max, self.mp_max, Hwedge, Hv)
