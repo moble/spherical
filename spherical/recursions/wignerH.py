@@ -27,7 +27,7 @@ elements.
 import numpy as np
 import quaternionic
 
-from .. import jit, complex_powers
+from .. import jit, complex_powers, WignerHindex
 
 sqrt3 = np.sqrt(3)
 inverse_sqrt2 = 1.0 / np.sqrt(2)
@@ -104,7 +104,7 @@ def nmpm_index(n, mp, m):
 @jit
 def _step_1(Hwedge):
     """If n=0 set H_{0}^{0,0}=1."""
-    Hwedge[0, :] = 1.0
+    Hwedge[0] = 1.0
 
 
 @jit
@@ -125,12 +125,11 @@ def _step_2(g, h, n_max, mp_max, Hwedge, Hextra, Hv, cosβ, sinβ):
     from its symmetric equivalent H^{0, 1}_{n} in this step.
 
     """
-    prefactor = np.empty_like(sinβ)
     # n = 1
     n0n_index = WignerHindex(1, 0, 1, mp_max)
     nn_index = nm_index(1, 1)
-    Hwedge[n0n_index, :] = sqrt3  # Un-normalized
-    Hwedge[n0n_index-1, :] = (g[nn_index-1] * cosβ) * inverse_sqrt2  # Normalized
+    Hwedge[n0n_index] = sqrt3  # Un-normalized
+    Hwedge[n0n_index-1] = (g[nn_index-1] * cosβ) * inverse_sqrt2  # Normalized
     # n = 2, ..., n_max+1
     for n in range(2, n_max+2):
         if n <= n_max:
@@ -143,43 +142,40 @@ def _step_2(g, h, n_max, mp_max, Hwedge, Hextra, Hv, cosβ, sinβ):
         nn_index = nm_index(n, n)
         const = np.sqrt(1.0 + 0.5/n)
         gi = g[nn_index-1]
-        for j in range(H.shape[1]):
-            # m = n
-            H[n0n_index, j] = const * Hwedge[nm10nm1_index, j]
-            # m = n-1
-            H[n0n_index-1, j] = gi * cosβ[j] * H[n0n_index, j]
+        # m = n
+        H[n0n_index] = const * Hwedge[nm10nm1_index]
+        # m = n-1
+        H[n0n_index-1] = gi * cosβ * H[n0n_index]
         # m = n-2, ..., 1
         for i in range(2, n):
             gi = g[nn_index-i]
             hi = h[nn_index-i]
-            for j in range(H.shape[1]):
-                H[n0n_index-i, j] = gi * cosβ[j] * H[n0n_index-i+1, j] - hi * sinβ[j]**2 * H[n0n_index-i+2, j]
+            H[n0n_index-i] = gi * cosβ * H[n0n_index-i+1] - hi * sinβ**2 * H[n0n_index-i+2]
         # m = 0, with normalization
         const = 1.0 / np.sqrt(4*n+2)
         gi = g[nn_index-n]
         hi = h[nn_index-n]
-        for j in range(H.shape[1]):
-            H[n0n_index-n, j] = (gi * cosβ[j] * H[n0n_index-n+1, j] - hi * sinβ[j]**2 * H[n0n_index-n+2, j]) * const
+        H[n0n_index-n] = (gi * cosβ * H[n0n_index-n+1] - hi * sinβ**2 * H[n0n_index-n+2]) * const
         # Now, loop back through, correcting the normalization for this row, except for n=n element
-        prefactor[:] = const
+        prefactor = const
         for i in range(1, n):
             prefactor *= sinβ
-            H[n0n_index-n+i, :] *= prefactor
+            H[n0n_index-n+i] *= prefactor
         # Supply extra edge cases as noted in docstring
         if n <= n_max:
-            Hv[nm_index(n, 1), :] = Hwedge[WignerHindex(n, 0, 1, mp_max)]
-            Hv[nm_index(n, 0), :] = Hwedge[WignerHindex(n, 0, 1, mp_max)]
+            Hv[nm_index(n, 1)] = Hwedge[WignerHindex(n, 0, 1, mp_max)]
+            Hv[nm_index(n, 0)] = Hwedge[WignerHindex(n, 0, 1, mp_max)]
     # Correct normalization of m=n elements
-    prefactor[:] = 1.0
+    prefactor = 1.0
     for n in range(1, n_max+1):
         prefactor *= sinβ
-        Hwedge[WignerHindex(n, 0, n, mp_max), :] *= prefactor / np.sqrt(4*n+2)
+        Hwedge[WignerHindex(n, 0, n, mp_max)] *= prefactor / np.sqrt(4*n+2)
     for n in [n_max+1]:
         prefactor *= sinβ
-        Hextra[n, :] *= prefactor / np.sqrt(4*n+2)
+        Hextra[n] *= prefactor / np.sqrt(4*n+2)
     # Supply extra edge cases as noted in docstring
-    Hv[nm_index(1, 1), :] = Hwedge[WignerHindex(1, 0, 1, mp_max)]
-    Hv[nm_index(1, 0), :] = Hwedge[WignerHindex(1, 0, 1, mp_max)]
+    Hv[nm_index(1, 1)] = Hwedge[WignerHindex(1, 0, 1, mp_max)]
+    Hv[nm_index(1, 0)] = Hwedge[WignerHindex(1, 0, 1, mp_max)]
 
 
 @jit
@@ -208,14 +204,13 @@ def _step_3(a, b, n_max, mp_max, Hwedge, Hextra, cosβ, sinβ):
             b6 = b[-i+i3-2]
             b7 = b[i+i3]
             a8 = a[i+i4]
-            for j in range(Hwedge.shape[1]):
-                Hwedge[i+i1, j] = inverse_b5 * (
-                    0.5 * (
-                          b6 * (1-cosβ[j]) * H2[i+i2+2, j]
-                        - b7 * (1+cosβ[j]) * H2[i+i2, j]
-                    )
-                    - a8 * sinβ[j] * H2[i+i2+1, j]
+            Hwedge[i+i1] = inverse_b5 * (
+                0.5 * (
+                      b6 * (1-cosβ) * H2[i+i2+2]
+                    - b7 * (1+cosβ) * H2[i+i2]
                 )
+                - a8 * sinβ * H2[i+i2+1]
+            )
 
 
 #@jit
@@ -246,28 +241,25 @@ def _step_4(d, n_max, mp_max, Hwedge, Hv):
             for i in [0]:
                 d7 = d[i+i6]
                 d8 = d[i+i5]
-                for j in range(Hwedge.shape[1]):
-                    Hv[i+nm_index(n, mp+1), j] = inverse_d5 * (
-                          d6 * Hwedge[i+i2, j]
-                        - d7 * Hv[i+nm_index(n, mp), j]
-                        + d8 * Hwedge[i+i4, j]
-                    )
+                Hv[i+nm_index(n, mp+1)] = inverse_d5 * (
+                      d6 * Hwedge[i+i2]
+                    - d7 * Hv[i+nm_index(n, mp)]
+                    + d8 * Hwedge[i+i4]
+                )
             for i in range(1, n-mp):
                 d7 = d[i+i6]
                 d8 = d[i+i5]
-                for j in range(Hwedge.shape[1]):
-                    Hwedge[i+i1, j] = inverse_d5 * (
-                          d6 * Hwedge[i+i2, j]
-                        - d7 * Hwedge[i+i3, j]
-                        + d8 * Hwedge[i+i4, j]
-                    )
+                Hwedge[i+i1] = inverse_d5 * (
+                      d6 * Hwedge[i+i2]
+                    - d7 * Hwedge[i+i3]
+                    + d8 * Hwedge[i+i4]
+                )
             # m = n
             for i in [n-mp]:
-                for j in range(Hwedge.shape[1]):
-                    Hwedge[i+i1, j] = inverse_d5 * (
-                          d6 * Hwedge[i+i2, j]
-                        - d[i+i6] * Hwedge[i+i3, j]
-                    )
+                Hwedge[i+i1] = inverse_d5 * (
+                      d6 * Hwedge[i+i2]
+                    - d[i+i6] * Hwedge[i+i3]
+                )
 
 
 @jit
@@ -306,32 +298,28 @@ def _step_5(d, n_max, mp_max, Hwedge, Hv):
                 d7 = d[i+i7]
                 d8 = d[i+i8]
                 if mp == 0:
-                    for j in range(Hwedge.shape[1]):
-                        Hv[i+nm_index(n, mp-1), j] = inverse_d5 * (
-                              d6 * Hv[i+nm_index(n, mp+1), j]
-                            + d7 * Hv[i+nm_index(n, mp), j]
-                            - d8 * Hwedge[i+i4, j]
-                        )
+                    Hv[i+nm_index(n, mp-1)] = inverse_d5 * (
+                          d6 * Hv[i+nm_index(n, mp+1)]
+                        + d7 * Hv[i+nm_index(n, mp)]
+                        - d8 * Hwedge[i+i4]
+                    )
                 else:
-                    for j in range(Hwedge.shape[1]):
-                        Hv[i+nm_index(n, mp-1), j] = inverse_d5 * (
-                              d6 * Hwedge[i+i2, j]
-                            + d7 * Hv[i+nm_index(n, mp), j]
-                            - d8 * Hwedge[i+i4, j]
-                        )
+                    Hv[i+nm_index(n, mp-1)] = inverse_d5 * (
+                          d6 * Hwedge[i+i2]
+                        + d7 * Hv[i+nm_index(n, mp)]
+                        - d8 * Hwedge[i+i4]
+                    )
             for i in range(1, n+mp):
                 d7 = d[i+i7]
                 d8 = d[i+i8]
-                for j in range(Hwedge.shape[1]):
-                    Hwedge[i+i1, j] = inverse_d5 * (
-                          d6 * Hwedge[i+i2, j]
-                        + d7 * Hwedge[i+i3, j]
-                        - d8 * Hwedge[i+i4, j]
-                    )
+                Hwedge[i+i1] = inverse_d5 * (
+                      d6 * Hwedge[i+i2]
+                    + d7 * Hwedge[i+i3]
+                    - d8 * Hwedge[i+i4]
+                )
             # m = n
             i = n+mp
-            for j in range(Hwedge.shape[1]):
-                Hwedge[i+i1, j] = inverse_d5 * (
-                      d6 * Hwedge[i+i2, j]
-                    + d[i+i7] * Hwedge[i+i3, j]
-                )
+            Hwedge[i+i1] = inverse_d5 * (
+                  d6 * Hwedge[i+i2]
+                + d[i+i7] * Hwedge[i+i3]
+            )
