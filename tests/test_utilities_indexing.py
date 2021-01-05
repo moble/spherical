@@ -170,6 +170,50 @@ def test_WignerDindex():
     # print(f"\nTotal indices checked: {k:_}")
 
 
+def test_Yrange():
+    def r(ell_min, ell_max):
+        return [
+            (ℓ, m) for ℓ in range(ell_min, ell_max+1)
+            for m in range(-ℓ, ℓ+1)
+        ]
+    for ell_max in range(24+1):
+        for ell_min in range(ell_max+1):
+            a = sf.Yrange(ell_min, ell_max)
+            b = r(ell_min, ell_max)
+            assert np.array_equal(a, b), ((ell_min, ell_max), a, b)
+
+
+def test_Ysize():
+    # k = 0
+    for ell_max in range(24+1):
+        for ell_min in range(ell_max+1):
+            a = sf.Ysize(ell_min, ell_max)
+            b = len(sf.Yrange(ell_min, ell_max))
+            assert a == b, ((ell_min, ell_max), a, b)#, k)
+    #        k += 1
+    # print(f"Total sizes checked: {k:_}")
+
+
+def test_Yindex():
+    k = 0
+    for ell_max in range(24+1):
+        for ell_min in [0]:
+            r = sf.Yrange(ell_min, ell_max)
+            for ell in range(ell_min, ell_max+1):
+                for m in range(-ell, ell+1):
+                    i = sf.Yindex(ell, m)
+                    assert np.array_equal(r[i], [ell, m]), ((ell, m), i, ell_min, ell_max, r)
+                    k += 1
+        for ell_min in range(ell_max+1):
+            r = sf.Yrange(ell_min, ell_max)
+            for ell in range(ell_min, ell_max+1):
+                for m in range(-ell, ell+1):
+                    i = sf.Yindex(ell, m, ell_min)
+                    assert np.array_equal(r[i], [ell, m]), ((ell, m), i, ell_min, ell_max, r)
+                    k += 1
+    # print(f"\nTotal indices checked: {k:_}")
+
+
 
 #####################################################
 ## Older versions kept for backwards compatibility ##
