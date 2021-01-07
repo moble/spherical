@@ -8,6 +8,14 @@ import quaternionic
 
 ell_max_default = 36
 
+try:
+    import spinsfast
+    requires_spinsfast = lambda f: f
+except:
+    spinsfast_missing = True
+    requires_spinsfast = pytest.mark.skipif(True, reason="spinsfast is missing")
+
+
 
 def pytest_addoption(parser):
     parser.addoption("--ell_max", action="store", type=int, default=ell_max_default,

@@ -13,7 +13,7 @@ import numpy as np
 import spherical as sf
 import pytest
 
-skip_windows = pytest.mark.skipif('win' in platform.lower() and not 'darwin' in platform.lower(), reason="FFTW is missing")
+from .conftest import requires_spinsfast
 
 
 def test_modes_creation():
@@ -121,7 +121,7 @@ def test_modes_copying_and_pickling(copier):
         assert c.ell_max == m.ell_max
 
 
-@skip_windows
+@requires_spinsfast
 def test_modes_grid():
     for s in range(-2, 2 + 1):
         ell_min = abs(s)
@@ -140,7 +140,7 @@ def test_modes_grid():
             assert g.shape[-2:] == (n_theta, n_phi)
 
 
-@skip_windows
+@requires_spinsfast
 def test_modes_addition():
     tolerance = 1e-14
     np.random.seed(1234)
@@ -197,7 +197,7 @@ def test_modes_addition():
                     assert np.allclose(g1+g2, g12, rtol=tolerance, atol=tolerance)
 
 
-@skip_windows
+@requires_spinsfast
 def test_modes_subtraction():
     tolerance = 1e-14
     np.random.seed(1234)
@@ -261,7 +261,7 @@ def test_modes_subtraction():
                 assert np.allclose(g1-g2, g12, rtol=tolerance, atol=tolerance)
 
 
-@skip_windows
+@requires_spinsfast
 def test_modes_multiplication():
     tolerance = 1e-13
     np.random.seed(1234)
@@ -325,7 +325,7 @@ def test_modes_multiplication():
                     assert np.allclose(g1*g2, g12, rtol=tolerance, atol=tolerance)
 
 
-@skip_windows
+@requires_spinsfast
 def test_modes_conjugate():
     tolerance = 1e-15
     np.random.seed(1234)
@@ -349,7 +349,7 @@ def test_modes_conjugate():
             assert np.allclose(g, np.conjugate(gbar), rtol=tolerance, atol=tolerance)
 
 
-@skip_windows
+@requires_spinsfast
 def test_modes_real():
     tolerance = 1e-14
     np.random.seed(1234)
@@ -381,7 +381,7 @@ def test_modes_real():
                 mreal = m._real_func(inplace)
 
 
-@skip_windows
+@requires_spinsfast
 def test_modes_imag():
     tolerance = 1e-14
     np.random.seed(1234)
@@ -502,7 +502,7 @@ def test_modes_derivative_commutators():
         assert np.allclose(ethbar(eth(m)) - eth(ethbar(m)), 2 * m.s * m, rtol=tolerance, atol=tolerance)
 
 
-@skip_windows
+@requires_spinsfast
 def test_modes_derivatives_on_grids():
     # Test various SWSH-derivative expressions on grids
     tolerance = 2e-14
