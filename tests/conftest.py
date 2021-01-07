@@ -12,6 +12,8 @@ ell_max_default = 36
 def pytest_addoption(parser):
     parser.addoption("--ell_max", action="store", type=int, default=ell_max_default,
                      help="Maximum ell value to test")
+    parser.addoption("--ell_max_slow", action="store", type=int, default=ell_max_default // 2,
+                     help="Maximum ell value to test with slow tests")
     parser.addoption("--run_slow_tests", action="store_true", default=False,
                      help="Run all tests, including slow ones")
 
@@ -37,6 +39,11 @@ def pytest_runtest_setup(item):
 @pytest.fixture
 def ell_max(request):
     return request.config.getoption("--ell_max")
+
+
+@pytest.fixture
+def ell_max_slow(request):
+    return request.config.getoption("--ell_max_slow")
 
 
 @pytest.fixture
