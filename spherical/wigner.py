@@ -436,7 +436,7 @@ class Wigner:
         R = quaternionic.array(R)
         z = R.to_euler_phases
         Hwedge = self.H(z[1], workspace)
-        𝔇 = out if out is not None else np.empty(self.Dsize, dtype=complex)
+        𝔇 = out if out is not None else np.zeros(self.Dsize, dtype=complex)
         zₐpowers = complex_powers(z[0], self.ell_max)
         zᵧpowers = complex_powers(z[2], self.ell_max)
         _fill_wigner_D(self.ell_min, self.ell_max, self.mp_max, 𝔇, Hwedge, zₐpowers, zᵧpowers)
@@ -646,26 +646,31 @@ def _fill_sYlm(ell_min, ell_max, mp_max, s, Y, Hwedge, zₐpowers, zᵧpowers):
 
     ell0 = max(abs(s), ell_min)
     Y[:Yindex(ell0, -ell0, ell_min)] = 0.0
-    for ell in range(ell0, ell_max+1):
-        c1 = (-1)**s * np.sqrt((2 * ell + 1) * inverse_4pi)
-        i_Y = Yindex(ell, -ell, ell_min)
-        for mp in range(-ell, 0):
-            if -s < 0:
-                i_H = WignerHindex(ell, mp, -s, mp_max)
-                Y[i_Y] = c1 * ϵ(mp) * ϵ(s) * Hwedge[i_H] * zᵧpowers[s].conjugate() * zₐpowers[-mp].conjugate()
+    if s >= 0:
+        c1 = zᵧpowers[s].conjugate()
+        for ell in range(ell0, ell_max+1):
+            i_Y = Yindex(ell, -ell, ell_min)
+            c2 = c1 * np.sqrt((2 * ell + 1) * inverse_4pi)
+            for m in range(-ell, 0):
+                i_H = WignerHindex(ell, m, -s, mp_max)
+                Y[i_Y] = c2 * Hwedge[i_H] * zₐpowers[-m].conjugate()
                 i_Y += 1
-            else:
-                i_H = WignerHindex(ell, mp, -s, mp_max)
-                Y[i_Y] = c1 * ϵ(mp) * ϵ(s) * Hwedge[i_H] * zᵧpowers[-s] * zₐpowers[-mp].conjugate()
+            for m in range(0, ell+1):
+                i_H = WignerHindex(ell, m, -s, mp_max)
+                Y[i_Y] = c2 * ϵ(m) * Hwedge[i_H] * zₐpowers[m]
                 i_Y += 1
-        for mp in range(0, ell+1):
-            if -s < 0:
-                i_H = WignerHindex(ell, mp, -s, mp_max)
-                Y[i_Y] = c1 * ϵ(mp) * ϵ(s) * Hwedge[i_H] * zᵧpowers[s].conjugate() * zₐpowers[mp]
+    else:  # s < 0
+        c1 = (-1)**s * zᵧpowers[-s]
+        for ell in range(ell0, ell_max+1):
+            i_Y = Yindex(ell, -ell, ell_min)
+            c2 = c1 * np.sqrt((2 * ell + 1) * inverse_4pi)
+            for m in range(-ell, 0):
+                i_H = WignerHindex(ell, m, -s, mp_max)
+                Y[i_Y] = c2 * Hwedge[i_H] * zₐpowers[-m].conjugate()
                 i_Y += 1
-            else:
-                i_H = WignerHindex(ell, mp, -s, mp_max)
-                Y[i_Y] = c1 * ϵ(mp) * ϵ(s) * Hwedge[i_H] * zᵧpowers[-s] * zₐpowers[mp]
+            for m in range(0, ell+1):
+                i_H = WignerHindex(ell, m, -s, mp_max)
+                Y[i_Y] = c2 * ϵ(m) * Hwedge[i_H] * zₐpowers[m]
                 i_Y += 1
 
 
