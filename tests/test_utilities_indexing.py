@@ -5,16 +5,19 @@
 
 import numpy as np
 import spherical as sf
+import pytest
+
+slow = pytest.mark.slow
 
 
-def test_WignerHrange():
+def test_WignerHrange(ell_max):
     def r(mp_max, ell_max):
         return [
             (ell, mp, m) for ell in range(ell_max+1)
             for mp in range(-min(ell, mp_max), min(ell, mp_max)+1)
             for m in range(abs(mp), ell+1)
         ]
-    for ell_max in range(24+1):
+    for ell_max in range(ell_max+1):
         a = sf.WignerHrange(ell_max)  # Implicitly, mp_max=ell_max
         b = r(ell_max, ell_max)
         assert np.array_equal(a, b), ((ell_max, ell_max), a, b)
@@ -24,9 +27,9 @@ def test_WignerHrange():
             assert np.array_equal(a, b), ((mp_max, ell_max), a, b)
 
 
-def test_WignerHsize():
+def test_WignerHsize(ell_max):
     # k = 0
-    for ell_max in range(24+1):
+    for ell_max in range(ell_max+1):
         a = sf.WignerHsize(ell_max)
         b = len(sf.WignerHrange(ell_max, ell_max))
         assert a == b, ((ell_max, ell_max), a, b)#, k)
@@ -38,7 +41,8 @@ def test_WignerHsize():
     # print(f"Total sizes checked: {k:_}")
 
 
-def test_WignerHindex():
+@slow
+def test_WignerHindex(ell_max_slow):
     # k = 0
     def fold_H_indices(ell, mp, m):
         if m < -mp:
@@ -51,7 +55,7 @@ def test_WignerHindex():
                 return [ell, m, mp]
             else:
                 return [ell, mp, m]
-    for ell_max in range(16+1):
+    for ell_max in range(ell_max_slow+1):
         r = sf.WignerHrange(ell_max)
         for ell in range(ell_max+1):
             for mp in range(-ell, ell+1):
@@ -72,14 +76,15 @@ def test_WignerHindex():
     # print(f"\nTotal indices checked: {k:_}")
 
 
-def test_WignerDrange():
+@slow
+def test_WignerDrange(ell_max_slow):
     def r(ell_min, mp_max, ell_max):
         return [
             (ℓ, mp, m) for ℓ in range(ell_min, ell_max+1)
             for mp in range(-min(ℓ, mp_max), min(ℓ, mp_max)+1)
             for m in range(-ℓ, ℓ+1)
         ]
-    for ell_max in range(16+1):
+    for ell_max in range(ell_max_slow//2+1):
         for ell_min in range(ell_max+1):
             a = sf.WignerDrange(ell_min, ell_max)  # Implicitly, mp_max=ell_max
             b = r(ell_min, ell_max, ell_max)
@@ -90,9 +95,9 @@ def test_WignerDrange():
                 assert np.array_equal(a, b), ((ell_min, mp_max, ell_max), a, b)
 
 
-def test_WignerDsize_mpmax_ellmin():
+def test_WignerDsize_mpmax_ellmin(ell_max):
     # k = 0
-    for ell_max in range(24+1):
+    for ell_max in range(ell_max+1):
         for ell_min in range(ell_max+1):
             for mp_max in range(ell_max+1):
                 a = sf.WignerDsize(ell_min, mp_max, ell_max)
@@ -102,9 +107,9 @@ def test_WignerDsize_mpmax_ellmin():
     # print(f"Total sizes checked: {k:_}")
 
 
-def test_WignerDsize_mpmax():
+def test_WignerDsize_mpmax(ell_max):
     # k = 0
-    for ell_max in range(32+1):
+    for ell_max in range(ell_max+1):
         for ell_min in [0]:
             for mp_max in range(ell_max+1):
                 a = sf.WignerDsize(ell_min, mp_max, ell_max)
@@ -115,9 +120,9 @@ def test_WignerDsize_mpmax():
     # print(f"Total sizes checked: {k:_}")
 
 
-def test_WignerDsize_ellmin():
+def test_WignerDsize_ellmin(ell_max):
     # k = 0
-    for ell_max in range(32+1):
+    for ell_max in range(ell_max+1):
         for ell_min in range(ell_max+1):
             for mp_max in [ell_max]:
                 a = sf.WignerDsize(ell_min, mp_max, ell_max)
@@ -128,9 +133,9 @@ def test_WignerDsize_ellmin():
     # print(f"Total sizes checked: {k:_}")
 
 
-def test_WignerDsize():
+def test_WignerDsize(ell_max):
     # k = 0
-    for ell_max in range(64+1):
+    for ell_max in range(ell_max+1):
         for ell_min in [0]:
             for mp_max in [ell_max]:
                 a = sf.WignerDsize(ell_min, mp_max, ell_max)
@@ -141,9 +146,10 @@ def test_WignerDsize():
     # print(f"Total sizes checked: {k:_}")
 
 
-def test_WignerDindex():
+@slow
+def test_WignerDindex(ell_max_slow):
     k = 0
-    for ell_max in range(10+1):
+    for ell_max in range(ell_max_slow+1):
         r = sf.WignerDrange(0, ell_max)
         for ell in range(ell_max+1):
             for mp in range(-ell, ell+1):
@@ -170,22 +176,22 @@ def test_WignerDindex():
     # print(f"\nTotal indices checked: {k:_}")
 
 
-def test_Yrange():
+def test_Yrange(ell_max):
     def r(ell_min, ell_max):
         return [
             (ℓ, m) for ℓ in range(ell_min, ell_max+1)
             for m in range(-ℓ, ℓ+1)
         ]
-    for ell_max in range(24+1):
+    for ell_max in range(ell_max+1):
         for ell_min in range(ell_max+1):
             a = sf.Yrange(ell_min, ell_max)
             b = r(ell_min, ell_max)
             assert np.array_equal(a, b), ((ell_min, ell_max), a, b)
 
 
-def test_Ysize():
+def test_Ysize(ell_max):
     # k = 0
-    for ell_max in range(24+1):
+    for ell_max in range(ell_max+1):
         for ell_min in range(ell_max+1):
             a = sf.Ysize(ell_min, ell_max)
             b = len(sf.Yrange(ell_min, ell_max))
@@ -194,9 +200,9 @@ def test_Ysize():
     # print(f"Total sizes checked: {k:_}")
 
 
-def test_Yindex():
+def test_Yindex(ell_max):
     k = 0
-    for ell_max in range(24+1):
+    for ell_max in range(ell_max+1):
         for ell_min in [0]:
             r = sf.Yrange(ell_min, ell_max)
             for ell in range(ell_min, ell_max+1):
@@ -255,10 +261,11 @@ def test_LMpM_range(ell_max):
                                             for m in range(-ell, ell + 1)]))
 
 
-def test_LMpM_index(ell_max):
-    for ell_min in range(ell_max + 1):
-        LMpM = sf.LMpM_range(ell_min, ell_max)
-        for ell in range(ell_min, ell_max + 1):
+@slow
+def test_LMpM_index(ell_max_slow):
+    for ell_min in range(ell_max_slow + 1):
+        LMpM = sf.LMpM_range(ell_min, ell_max_slow)
+        for ell in range(ell_min, ell_max_slow + 1):
             for mp in range(-ell, ell + 1):
                 for m in range(-ell, ell + 1):
                     assert np.array_equal(np.array([ell, mp, m]), LMpM[sf.LMpM_index(ell, mp, m, ell_min)])
