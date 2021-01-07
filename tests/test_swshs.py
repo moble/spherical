@@ -30,6 +30,8 @@ def slow_Wignerd(iota, ell, m, s):
 def slow_sYlm(s, ell, m, iota, phi):
     # Eq. II.7 of Ajith et al. (2007) 'Data formats...'
     # Note the weird definition w.r.t. `-s`
+    if abs(s) > ell or abs(m) > ell:
+        return 0j
     return (-1.) ** (-s) * math.sqrt((2 * ell + 1) / (4 * np.pi)) * slow_Wignerd(iota, ell, m, -s) * cmath.exp(
         1j * m * phi)
 
@@ -62,15 +64,31 @@ def test_SWSH_NINJA_values(special_angles, ell_max):
 
 
 @slow
-def test_SWSH_values(special_angles, ell_max):
+def test_SWSH_values(special_angles, ell_max_slow, eps):
+    ϵ = 5 * ell_max_slow**6 * eps
+    wigner = sf.Wigner(ell_max_slow)
     for iota in special_angles:
         for phi in special_angles:
-            for ell in range(ell_max + 1):
-                for s in range(-ell, ell + 1):
-                    for m in range(-ell, ell + 1):
-                        R = quaternionic.array.from_euler_angles(phi, iota, 0)
-                        assert abs(sf.SWSH(R, s, np.array([[ell, m]]))
-                                   - slow_sYlm(s, ell, m, iota, phi)) < ell_max ** 6 * precision_SWSH
+            R = quaternionic.array.from_euler_angles(phi, iota, 0)
+            Y1 = np.array([
+                [
+                    slow_sYlm(s, ell, m, iota, phi)
+                    for ell in range(ell_max_slow + 1)
+                    for m in range(-ell, ell + 1)
+                ]
+                for s in range(-ell_max_slow, ell_max_slow + 1)
+            ])
+            Y2 = np.array([wigner.sYlm(s, R) for s in range(-ell_max_slow, ell_max_slow + 1)])
+            if not np.allclose(Y1, Y2, rtol=ϵ, atol=ϵ):
+                i = np.argmax(np.abs(Y1-Y2))
+                print()
+                print(f"Y1 = np.array({Y1.tolist()})")
+                print(f"Y2 = np.array({Y2.tolist()})")
+                print(np.max(np.abs(Y1-Y2)), i, Y1.flat[i], Y2.flat[i], ϵ)
+                print()
+            assert np.allclose(Y1, Y2, rtol=ϵ, atol=ϵ)
+                        # assert abs(sf.SWSH(R, s, np.array([[ell, m]]))
+                        #            - slow_sYlm(s, ell, m, iota, phi)) < ell_max_slow ** 6 * precision_SWSH
 
 
 def test_SWSH_WignerD_expression(special_angles, ell_max):
@@ -122,7 +140,9 @@ def test_SWSH_conjugation(special_angles, ell_max):
                                    atol=1e-15, rtol=1e-15)
 
 
-def test_SWSH_grid(special_angles, ell_max):
+@slow
+def test_SWSH_grid(special_angles, ell_max_slow):
+    ell_max = ell_max_slow
     LM = sf.LM_range(0, ell_max)
 
     # Test flat array arrangement
@@ -131,7 +151,8 @@ def test_SWSH_grid(special_angles, ell_max):
                        for beta in special_angles
                        for gamma in special_angles])
     for s in range(-ell_max + 1, ell_max):
-        values_explicit = np.array([sf.SWSH(R, s, LM) for R in R_grid])
+        # values_explicit = np.array([sf.SWSH(R, s, LM) for R in R_grid])
+        values_explicit = sf.SWSH(R_grid, s, LM)
         values_grid = sf.SWSH_grid(R_grid, s, ell_max)
         assert np.array_equal(values_explicit, values_grid)
 
@@ -141,7 +162,8 @@ def test_SWSH_grid(special_angles, ell_max):
                         for beta in special_angles]
                        for gamma in special_angles])
     for s in range(-ell_max + 1, ell_max):
-        values_explicit = np.array([[[sf.SWSH(R, s, LM) for R in R1] for R1 in R2] for R2 in R_grid])
+        # values_explicit = np.array([[[sf.SWSH(R, s, LM) for R in R1] for R1 in R2] for R2 in R_grid])
+        values_explicit = sf.SWSH(R_grid, s, LM)
         values_grid = sf.SWSH_grid(R_grid, s, ell_max)
         assert np.array_equal(values_explicit, values_grid)
 

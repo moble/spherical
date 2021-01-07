@@ -75,7 +75,7 @@ class Wigner:
 
     def new_workspace(self):
         """Return a new empty array providing workspace for calculating H"""
-        return np.empty(self.Hsize + (self.ell_max+1)**2 + self.ell_max+2, dtype=float)
+        return np.zeros(self.Hsize + (self.ell_max+1)**2 + self.ell_max+2, dtype=float)
 
     def _split_workspace(self, workspace):
         size1 = self.Hsize
@@ -475,7 +475,12 @@ class Wigner:
 
         Notes
         -----
-        This function is the preferred method of computing the 𝔇 matrix for large ell
+        The spherical harmonics of spin weight s are related to the 𝔇 matrix as
+
+            ₛYₗₘ(R) = (-1)ˢ √((2ℓ+1)/(4π)) 𝔇ˡₘ₋ₛ(R)
+                   = (-1)ˢ √((2ℓ+1)/(4π)) 𝔇̄ˡ₋ₛₘ(R̄)
+
+        This function is the preferred method of computing the sYlm for large ell
         values.  In particular, above ell≈32 standard formulas become completely
         unusable because of numerical instabilities and overflow.  This function uses
         stable recursion methods instead, and should be usable beyond ell≈1000.
@@ -495,10 +500,15 @@ class Wigner:
                 f"This object has mp_max={self.mp_max}, which is not "
                 f"sufficient to compute sYlm values for spin weight s={s}"
             )
+        # # Note that we are using the conjugate relationship to swap the indices on 𝔇, because they are more easily calculated 
+        # Rconjugate = quaternionic.array(R).conjugate()
+        # z = Rconjugate.to_euler_phases
+
         R = quaternionic.array(R)
         z = R.to_euler_phases
+
         Hwedge = self.H(z[1], workspace)
-        Y = out if out is not None else np.empty(self.Ysize, dtype=complex)
+        Y = out if out is not None else np.zeros(self.Ysize, dtype=complex)
         zₐpowers = complex_powers(z[0], self.ell_max)
         zᵧpowers = complex_powers(z[2], self.ell_max)
         _fill_sYlm(self.ell_min, self.ell_max, self.mp_max, s, Y, Hwedge, zₐpowers, zᵧpowers)
@@ -630,31 +640,33 @@ def _fill_sYlm(ell_min, ell_max, mp_max, s, Y, Hwedge, zₐpowers, zᵧpowers):
     """Helper function for Wigner.sYlm"""
     # import warnings
     # warnings.warn("Jit commented out temporarily for debugging")
-    mp = -s
-    for ell in range(ell_min, ell_max+1):
-        coefficient = (-1)**s * np.sqrt((2 * ell + 1) * inverse_4pi)
+    #
+    #         ₛYₗₘ(R) = (-1)ˢ √((2ℓ+1)/(4π)) 𝔇ˡₘ₋ₛ(R)
+    #                = (-1)ˢ √((2ℓ+1)/(4π)) 𝔇̄ˡ₋ₛₘ(R̄)
+
+    ell0 = max(abs(s), ell_min)
+    Y[:Yindex(ell0, -ell0, ell_min)] = 0.0
+    for ell in range(ell0, ell_max+1):
+        c1 = (-1)**s * np.sqrt((2 * ell + 1) * inverse_4pi)
         i_Y = Yindex(ell, -ell, ell_min)
-        for m in range(-ell, 0):
-            i_H = WignerHindex(ell, mp, m, mp_max)
-            # print(1, Y.shape, i_Y, ell, mp, m, mp_max, ell_min, ell_max, s)
-            Y[i_Y] = coefficient * ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[-m].conjugate() * zₐpowers[-mp].conjugate()
-            i_Y += 1
-        for m in range(0, ell+1):
-            i_H = WignerHindex(ell, mp, m, mp_max)
-            # print(2, Y.shape, i_Y, ell, mp, m, mp_max, ell_min, ell_max, s)
-            Y[i_Y] = coefficient * ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[m] * zₐpowers[-mp].conjugate()
-            i_Y += 1
-        i_Y = Yindex(ell, -ell, ell_min)
-        for m in range(-ell, 0):
-            i_H = WignerHindex(ell, mp, m, mp_max)
-            # print(3, Y.shape, i_Y, ell, mp, m, mp_max, ell_min, ell_max, s)
-            Y[i_Y] = coefficient * ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[-m].conjugate() * zₐpowers[mp]
-            i_Y += 1
-        for m in range(0, ell+1):
-            i_H = WignerHindex(ell, mp, m, mp_max)
-            # print(4, Y.shape, i_Y, ell, mp, m, mp_max, ell_min, ell_max, s)
-            Y[i_Y] = coefficient * ϵ(mp) * ϵ(-m) * Hwedge[i_H] * zᵧpowers[m] * zₐpowers[mp]
-            i_Y += 1
+        for mp in range(-ell, 0):
+            if -s < 0:
+                i_H = WignerHindex(ell, mp, -s, mp_max)
+                Y[i_Y] = c1 * ϵ(mp) * ϵ(s) * Hwedge[i_H] * zᵧpowers[s].conjugate() * zₐpowers[-mp].conjugate()
+                i_Y += 1
+            else:
+                i_H = WignerHindex(ell, mp, -s, mp_max)
+                Y[i_Y] = c1 * ϵ(mp) * ϵ(s) * Hwedge[i_H] * zᵧpowers[-s] * zₐpowers[-mp].conjugate()
+                i_Y += 1
+        for mp in range(0, ell+1):
+            if -s < 0:
+                i_H = WignerHindex(ell, mp, -s, mp_max)
+                Y[i_Y] = c1 * ϵ(mp) * ϵ(s) * Hwedge[i_H] * zᵧpowers[s].conjugate() * zₐpowers[mp]
+                i_Y += 1
+            else:
+                i_H = WignerHindex(ell, mp, -s, mp_max)
+                Y[i_Y] = c1 * ϵ(mp) * ϵ(s) * Hwedge[i_H] * zᵧpowers[-s] * zₐpowers[mp]
+                i_Y += 1
 
 
 @jit
