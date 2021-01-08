@@ -118,3 +118,38 @@ def test_sYlm_WignerD_expression(special_angles, ell_max_slow, eps):
                         * D_R̄[sf.WignerDindex(ell, -s, -ell):sf.WignerDindex(ell, -s, ell)+1].conjugate()
                     )
                     assert np.allclose(Y_ℓ, Y_D, atol=ϵ, rtol=ϵ)
+
+
+@slow
+def test_sYlm_spin_behavior(Rs, special_angles, ell_max_slow, eps):
+    # We expect that the SWSHs behave according to
+    # sYlm( R * exp(gamma*z/2) ) = sYlm(R) * exp(-1j*s*gamma)
+    # See http://moble.github.io/spherical/SWSHs.html#fn:2
+    # for a more detailed explanation
+    # print("")
+    ϵ = 2 * ell_max_slow * eps
+    wigner = sf.Wigner(ell_max_slow)
+    for i, R in enumerate(Rs):
+        # print("\t{0} of {1}: R = {2}".format(i, len(Rs), R))
+        for gamma in special_angles:
+            Rgamma = R * quaternionic.array(math.cos(gamma / 2.), 0, 0, math.sin(gamma / 2.))
+            for s in range(-ell_max_slow, ell_max_slow + 1):
+                Y1 = wigner.sYlm(s, Rgamma)
+                Y2 = wigner.sYlm(s, R) * cmath.exp(-1j * s * gamma)
+                assert np.allclose(Y1, Y2, atol=ϵ, rtol=ϵ)
+
+
+@slow
+def test_sYlm_conjugation(special_angles, ell_max_slow, eps):
+    # {s}Y{l,m}.conjugate() = (-1.)**(s+m) {-s}Y{l,-m}
+    ϵ = 2 * ell_max_slow * eps
+    wigner = sf.Wigner(ell_max_slow)
+    m = sf.Yrange(0, ell_max_slow)[:, 1]
+    flipped_indices = np.array([sf.Yindex(ell, -m, 0) for ell, m in sf.Yrange(0, ell_max_slow)])
+    for iota in special_angles:
+        for phi in special_angles:
+            R = quaternionic.array.from_spherical_coordinates(iota, phi)
+            for s in range(-ell_max_slow, ell_max_slow + 1):
+                Y1 = wigner.sYlm(s, R).conjugate()
+                Y2 = (-1.0)**(s+m) * wigner.sYlm(-s, R)[flipped_indices]
+                assert np.allclose(Y1, Y2, atol=ϵ, rtol=ϵ)
