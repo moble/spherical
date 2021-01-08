@@ -16,7 +16,7 @@ def conjugate(self, inplace=False):
 
     """
     s = self.view(np.ndarray)
-    c = s if inplace else np.empty_like(s)
+    c = s if inplace else np.zeros_like(s)
     np.conjugate(s, out=c)
     if inplace:
         self._metadata['spin_weight'] = -self.spin_weight

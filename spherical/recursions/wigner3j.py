@@ -48,7 +48,7 @@ def determine_signs(f, j_min, j_max, j2, j3, m2, m3):
 class Wigner3jCalculator(object):
     def __init__(self, j2_max, j3_max):
         self._size = j2_max + j3_max + 1
-        self.workspace = np.empty(4 * self._size, dtype=np.float64)
+        self.workspace = np.zeros(4 * self._size, dtype=np.float64)
 
     @property
     def size(self):

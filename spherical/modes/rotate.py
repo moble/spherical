@@ -11,8 +11,8 @@ from .. import jit
 def rotate(modes, rotor, ell_min, ell_max, H, workspace):
     fₗₙ = np.asarray(modes, dtype=complex).reshape(-1, modes.shape[-1])
     fₗₘ = np.zeros_like(modes)
-    negative_terms = np.empty(fₗₙ.shape[:-1], dtype=fₗₙ.dtype)
-    positive_terms = np.empty(fₗₙ.shape[:-1], dtype=fₗₙ.dtype)
+    negative_terms = np.zeros(fₗₙ.shape[:-1], dtype=fₗₙ.dtype)
+    positive_terms = np.zeros(fₗₙ.shape[:-1], dtype=fₗₙ.dtype)
 
     zᵧ, zᵦ, zₐ = quaternion_angles(quaternion.as_float_array(rotor))
 

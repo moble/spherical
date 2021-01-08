@@ -98,8 +98,8 @@ def test_SWSH_signatures(Rs):
     ss = np.arange(-s_max, s_max+1)
     ell_max = 6
     ell_ms = sf.LM_range(0, ell_max)
-    SWSHs1 = np.empty((Rs.size//4, ss.size, ell_ms.size//2), dtype=np.complex)
-    SWSHs2 = np.empty_like(SWSHs1)
+    SWSHs1 = np.zeros((Rs.size//4, ss.size, ell_ms.size//2), dtype=np.complex)
+    SWSHs2 = np.zeros_like(SWSHs1)
     for i_s, s in enumerate(ss):
         for i_ellm, (ell, m) in enumerate(ell_ms):
             if ell >= abs(s):

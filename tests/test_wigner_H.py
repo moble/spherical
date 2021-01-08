@@ -7,7 +7,10 @@ import sympy
 import numpy as np
 import spherical as sf
 
+from .conftest import requires_sympy
 
+
+@requires_sympy
 def test_H(eps):
     from sympy.physics.quantum.spin import WignerD as sympyWignerD
 
@@ -29,11 +32,11 @@ def test_H(eps):
         for mp in range(-n, n+1):
             for m in range(-n, n+1):
                 sympyd = sympy.re(sympy.N(sympyWignerD(n, mp, m, alpha, beta, gamma).doit()))
-                myd = ϵ(mp) * ϵ(-m) * Hnmpm[sf.WignerHindex(n, mp, m)]
+                sphericald = ϵ(mp) * ϵ(-m) * Hnmpm[sf.WignerHindex(n, mp, m)]
                 # sympyd = sympy.re(sympy.N(sympyWignerD(n, mp, m, alpha, -beta, gamma).doit()))
-                # myd = ϵ(-mp) * ϵ(m) * Hnmpm[sf.WignerHindex(n, mp, m)]
-                error = float(abs(sympyd-myd))
-                assert error < 3*eps, f"Testing Wigner d recursion: n={n}, m'={mp}, m={m}, sympy:{sympyd}, spherical:{myd}, error={error}"
+                # sphericald = ϵ(-mp) * ϵ(m) * Hnmpm[sf.WignerHindex(n, mp, m)]
+                error = float(abs(sympyd-sphericald))
+                assert error < 3*eps, f"Testing Wigner d recursion: n={n}, m'={mp}, m={m}, sympy:{sympyd}, spherical:{sphericald}, error={error}"
                 max_error = max(error, max_error)
 
     # print(f"\nTesting H (Wigner d recursion): max error = {max_error}")

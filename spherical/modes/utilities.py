@@ -86,14 +86,16 @@ def grid(self, n_theta=None, n_phi=None, **kwargs):
 
 def evaluate(self, rotors, **kwargs):
     """Return values of function on input rotors"""
-    import numpy as np
-    import spherical as sf
-    SWSHs = sf.SWSH_grid(rotors, self.spin_weight, self.ell_max)
-    return np.tensordot(
-        self.view(np.ndarray),
-        SWSHs[..., sf.LM_index(self.ell_min, -self.ell_min, 0):sf.LM_index(self.ell_max, self.ell_max, 0)+1],
-        axes=([-1], [-1])
-    )
+    from .. import Wigner
+    wigner = Wigner(self.ell_max, self.ell_min, mp_max=abs(self.spin_weight))
+    return wigner.evaluate(self, rotors)
+
+
+def rotate(self, R, **kwargs):
+    """Return values of function on input rotors"""
+    from .. import Wigner
+    wigner = Wigner(self.ell_max, self.ell_min, mp_max=self.ell_max)
+    return wigner.rotate(self, R)
 
 
 def _check_broadcasting(self, array, reverse=False):

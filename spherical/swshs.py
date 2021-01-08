@@ -63,9 +63,9 @@ def SWSH(R, s, indices, ell_min=0):
 
     # Set up input, outputs, and Wigner
     rotors = R.reshape(-1, 4)
-    output = np.empty((rotors.shape[0], indices.shape[0]), dtype=complex).reshape(-1, indices.shape[0])
+    output = np.zeros((rotors.shape[0], indices.shape[0]), dtype=complex)
     wigner = Wigner(ell_max, ell_min, mp_max=abs(s))
-    Y = np.empty(wigner.Ysize, dtype=complex)
+    Y = np.zeros(wigner.Ysize, dtype=complex)
 
     # Loop through each calculation
     for i in range(rotors.shape[0]):

@@ -216,7 +216,7 @@ class Modes(np.ndarray):
     )
 
     from .utilities import (
-        index, truncate_ell, grid, evaluate, _check_broadcasting
+        index, truncate_ell, grid, evaluate, rotate, _check_broadcasting
     )
 
     from .ufuncs import __array_ufunc__

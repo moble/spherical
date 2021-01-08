@@ -12,8 +12,13 @@ try:
     import spinsfast
     requires_spinsfast = lambda f: f
 except:
-    spinsfast_missing = True
     requires_spinsfast = pytest.mark.skipif(True, reason="spinsfast is missing")
+
+try:
+    import sympy
+    requires_sympy = lambda f: f
+except:
+    requires_sympy = pytest.mark.skipif(True, reason="sympy is missing")
 
 
 

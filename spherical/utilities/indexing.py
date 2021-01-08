@@ -77,7 +77,7 @@ def WignerHrange(mp_max, ell_max=-1):
     """
     if ell_max < 0:
         ell_max = mp_max
-    r = np.empty((WignerHsize(mp_max, ell_max), 3), dtype=np.int64)
+    r = np.zeros((WignerHsize(mp_max, ell_max), 3), dtype=np.int64)
     i = 0
     for ell in range(ell_max+1):
         for mp in range(-min(ell, mp_max), min(ell, mp_max)+1):
@@ -280,7 +280,7 @@ def WignerDrange(ell_min, mp_max, ell_max=-1):
     """
     if ell_max < 0:
         ell_max = mp_max
-    r = np.empty((WignerDsize(ell_min, mp_max, ell_max), 3), dtype=np.int64)
+    r = np.zeros((WignerDsize(ell_min, mp_max, ell_max), 3), dtype=np.int64)
     i = 0
     for ell in range(ell_min, ell_max+1):
         for mp in range(-min(ell, mp_max), min(ell, mp_max)+1):
@@ -417,7 +417,7 @@ def Yrange(ell_min, ell_max):
         ]
 
     """
-    r = np.empty((Ysize(ell_min, ell_max), 2), dtype=np.int64)
+    r = np.zeros((Ysize(ell_min, ell_max), 2), dtype=np.int64)
     i = 0
     for ell in range(ell_min, ell_max+1):
         for m in range(-ell, ell+1):

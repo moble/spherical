@@ -10,6 +10,8 @@ import quaternionic
 import spherical as sf
 import pytest
 
+from .conftest import requires_sympy
+
 slow = pytest.mark.slow
 
 precision_Wigner_D_element = 4.e-14
@@ -20,8 +22,8 @@ def test_Wigner_D_negative_argument(Rs, ell_max, eps):
     #
     # This test passes (specifically, using these tolerances) for at least
     # ell_max=100, but takes a few minutes at that level.
-    a = np.empty(sf.WignerDsize(0, ell_max), dtype=complex)
-    b = np.empty(sf.WignerDsize(0, ell_max), dtype=complex)
+    a = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
+    b = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
     wigner = sf.Wigner(ell_max)
     for R in Rs:
         wigner.D(R, out=a)
@@ -36,9 +38,9 @@ def test_Wigner_D_representation_property(Rs, ell_max, eps):
     # Test the representation property for special and random angles
     # For each l, 𝔇ˡₘₚ,ₘ(R1 * R2) = Σₘₚₚ 𝔇ˡₘₚ,ₘₚₚ(R1) * 𝔇ˡₘₚₚ,ₘ(R2)
     print("")
-    D1 = np.empty(sf.WignerDsize(0, ell_max), dtype=complex)
-    D2 = np.empty(sf.WignerDsize(0, ell_max), dtype=complex)
-    D12 = np.empty(sf.WignerDsize(0, ell_max), dtype=complex)
+    D1 = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
+    D2 = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
+    D12 = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
     wigner = sf.Wigner(ell_max)
     for i, R1 in enumerate(Rs):
         print(f"\t{i+1} of {len(Rs)}: R1 = {R1}")
@@ -63,8 +65,8 @@ def test_Wigner_D_representation_property(Rs, ell_max, eps):
 def test_Wigner_D_inverse_property(Rs, ell_max, eps):
     # Test the inverse property for special and random angles
     # For each l, 𝔇ˡₘₚ,ₘ(R⁻¹) should be the inverse matrix of 𝔇ˡₘₚ,ₘ(R)
-    D1 = np.empty(sf.WignerDsize(0, ell_max), dtype=complex)
-    D2 = np.empty(sf.WignerDsize(0, ell_max), dtype=complex)
+    D1 = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
+    D2 = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
     wigner = sf.Wigner(ell_max)
     for i, R in enumerate(Rs):
         # print(f"\t{i+1} of {len(Rs)}: R = {R}")
@@ -93,8 +95,8 @@ def test_Wigner_D_symmetries(Rs, ell_max, eps):
     #   D_{mp,m}(R) = \bar{D}_{m,mp}(\bar{R})
 
     ϵ = 5 * ell_max * eps
-    D1 = np.empty(sf.WignerDsize(0, ell_max), dtype=complex)
-    D2 = np.empty(sf.WignerDsize(0, ell_max), dtype=complex)
+    D1 = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
+    D2 = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
     wigner = sf.Wigner(ell_max)
     ell_mp_m = sf.WignerDrange(0, ell_max)
 
@@ -123,7 +125,7 @@ def test_Wigner_D_roundoff(Rs, ell_max, eps):
     # Testing rotations in special regions with simple expressions for 𝔇
 
     ϵ = 5 * ell_max * eps
-    D = np.empty(sf.WignerDsize(0, ell_max), dtype=complex)
+    D = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
     wigner = sf.Wigner(ell_max)
 
     # Test rotations with |Ra|<1e-15
@@ -200,7 +202,7 @@ def test_Wigner_D_underflow(Rs, ell_max, eps):
     epsilon = 1.e-10
 
     ϵ = 5 * ell_max * eps
-    D = np.empty(sf.WignerDsize(0, ell_max), dtype=complex)
+    D = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
     wigner = sf.Wigner(ell_max)
     ell_mp_m = sf.WignerDrange(0, ell_max)
 
@@ -224,7 +226,7 @@ def test_Wigner_D_underflow(Rs, ell_max, eps):
 
 
 def test_Wigner_D_non_overflow(ell_max):
-    D = np.empty(sf.WignerDsize(0, ell_max), dtype=complex)
+    D = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
     wigner = sf.Wigner(ell_max)
 
     # Test |Ra|=1e-10
@@ -259,7 +261,7 @@ def slow_Wigner_D_element(alpha, beta, gamma, ell, mp, m):
 
 @slow
 def test_Wigner_D_values(special_angles, ell_max, eps):
-    D = np.empty(sf.WignerDsize(0, ell_max), dtype=complex)
+    D = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
     wigner = sf.Wigner(ell_max)
     ell_mp_m = sf.WignerDrange(0, ell_max)
     ϵ = 5 * ell_max**6 * eps
@@ -273,3 +275,43 @@ def test_Wigner_D_values(special_angles, ell_max, eps):
                 a = np.conjugate(np.array([slow_Wigner_D_element(alpha, beta, gamma, ell, mp, m) for ell,mp,m in ell_mp_m]))
                 b = wigner.D(quaternionic.array.from_euler_angles(alpha, beta, gamma), out=D)
                 assert np.allclose(a, b, rtol=ϵ, atol=ϵ)
+
+
+@slow
+@requires_sympy
+def test_Wigner_D_sympy(special_angles, eps):
+    from sympy import S, N
+    from sympy.physics.quantum.spin import WignerD as sympyWignerD
+
+    ell_max = 4
+    wigner = sf.Wigner(ell_max)
+    max_error = 0.0
+
+    j = 0
+    k = 0
+    print()
+    a = special_angles[::4]
+    b = special_angles[len(special_angles)//2::4]
+    c = special_angles[::2]
+    for α in a:
+        for β in b:
+            for γ in c:
+                R = quaternionic.array.from_euler_angles(float(α), float(β), float(γ))
+                𝔇 = wigner.D(R)
+
+                k += 1
+                print(f"\tAngle iteration {k} of {a.size*b.size*c.size}")
+                for ell in range(wigner.ell_max+1):
+                    for mp in range(-ell, ell+1):
+                        for m in range(-ell, ell+1):
+                            # j += 1
+                            # print(f"\t\tIteration {j} of {(len(special_angles)**3)*wigner.Dsize+1}")
+                            sympyD = N(sympyWignerD(ell, mp, m, α, β, γ).doit(), n=24).conjugate()
+                            sphericalD = 𝔇[wigner.Dindex(ell, mp, m)]
+                            error = float(abs(sympyD-sphericalD))
+                            assert error < 2 * ell_max * eps, (
+                                f"Testing Wigner d recursion: ell={ell}, m'={mp}, m={m}, "
+                                f"sympy:{sympyD}, spherical:{sphericalD}, error={error}"
+                            )
+                            max_error = max(error, max_error)
+    print(f"max_error={max_error} after checking {(len(special_angles)**3)*wigner.Dsize} values")
