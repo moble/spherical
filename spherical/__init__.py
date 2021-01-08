@@ -54,7 +54,6 @@ from .recursions.complex_powers import complex_powers
 from .recursions.wigner3j import Wigner3jCalculator, Wigner3j, clebsch_gordan
 
 from .wigner import Wigner, wigner_d, wigner_D
-from .swshs import SWSH, SWSH_grid
 
 from .multiplication import multiply
 
