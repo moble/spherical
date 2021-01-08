@@ -53,20 +53,21 @@ def complex_powers(z, M, zpowers=None):
 def _complex_powers(zravel, M, zpowers):
     """Helper function for complex_powers(z, M)"""
     for i in range(zravel.size):
-        z = zravel[i]
-        θ = 1
-        while z.real<0 or z.imag<0:
-            θ *= 1j
-            z /= 1j
         zpowers[i, 0] = 1.0 + 0.0j
-        zpowers[i, 1] = z
-        clock = θ
-        dc = -2 * np.sqrt(z).imag ** 2
-        t = 2 * dc
-        dz = dc * (1 + 2 * zpowers[i, 1]) + 1j * np.sqrt(-dc * (2 + dc))
-        for m in range(2, M+1):
-            zpowers[i, m] = zpowers[i, m-1] + dz
-            dz += t * zpowers[i, m]
-            zpowers[i, m-1] *= clock
-            clock *= θ
-        zpowers[i, M] *= clock
+        if M > 0:
+            z = zravel[i]
+            θ = 1
+            while z.real<0 or z.imag<0:
+                θ *= 1j
+                z /= 1j
+            zpowers[i, 1] = z
+            clock = θ
+            dc = -2 * np.sqrt(z).imag ** 2
+            t = 2 * dc
+            dz = dc * (1 + 2 * zpowers[i, 1]) + 1j * np.sqrt(-dc * (2 + dc))
+            for m in range(2, M+1):
+                zpowers[i, m] = zpowers[i, m-1] + dz
+                dz += t * zpowers[i, m]
+                zpowers[i, m-1] *= clock
+                clock *= θ
+            zpowers[i, M] *= clock
