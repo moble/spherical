@@ -34,14 +34,14 @@ def test_Wigner_D_negative_argument(Rs, ell_max, eps):
 
 
 @slow
-def test_Wigner_D_representation_property(Rs, ell_max, eps):
+def test_Wigner_D_representation_property(Rs, ell_max_slow, eps):
     # Test the representation property for special and random angles
     # For each l, 𝔇ˡₘₚ,ₘ(R1 * R2) = Σₘₚₚ 𝔇ˡₘₚ,ₘₚₚ(R1) * 𝔇ˡₘₚₚ,ₘ(R2)
     print("")
-    D1 = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
-    D2 = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
-    D12 = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
-    wigner = sf.Wigner(ell_max)
+    D1 = np.zeros(sf.WignerDsize(0, ell_max_slow), dtype=complex)
+    D2 = np.zeros(sf.WignerDsize(0, ell_max_slow), dtype=complex)
+    D12 = np.zeros(sf.WignerDsize(0, ell_max_slow), dtype=complex)
+    wigner = sf.Wigner(ell_max_slow)
     for i, R1 in enumerate(Rs):
         print(f"\t{i+1} of {len(Rs)}: R1 = {R1}")
         for j, R2 in enumerate(Rs):
@@ -50,7 +50,7 @@ def test_Wigner_D_representation_property(Rs, ell_max, eps):
             wigner.D(R1, out=D1)
             wigner.D(R2, out=D2)
             wigner.D(R12, out=D12)
-            for ell in range(ell_max+1):
+            for ell in range(ell_max_slow+1):
                 ϵ = (2*ell+1)**2 * eps
                 i1 = sf.WignerDindex(ell, -ell, -ell)
                 i2 = sf.WignerDindex(ell, ell, ell)
@@ -59,7 +59,7 @@ def test_Wigner_D_representation_property(Rs, ell_max, eps):
                 Dˡ2 = D2[i1:i2+1].reshape(shape)
                 Dˡ12 = D12[i1:i2+1].reshape(shape)
                 assert np.allclose(Dˡ1 @ Dˡ2, Dˡ12, rtol=ϵ, atol=ϵ), ell
-                # assert np.allclose(Dˡ1 @ Dˡ2, Dˡ12, atol=ell_max * precision_Wigner_D_element), ell
+                # assert np.allclose(Dˡ1 @ Dˡ2, Dˡ12, atol=ell_max_slow * precision_Wigner_D_element), ell
 
 
 def test_Wigner_D_inverse_property(Rs, ell_max, eps):
@@ -83,7 +83,7 @@ def test_Wigner_D_inverse_property(Rs, ell_max, eps):
 
 
 @slow
-def test_Wigner_D_symmetries(Rs, ell_max, eps):
+def test_Wigner_D_symmetries(Rs, ell_max_slow, eps):
     # We have two obvious symmetries to test.  First,
     #
     #   D_{mp,m}(R) = (-1)^{mp+m} \bar{D}_{-mp,-m}(R)
@@ -94,11 +94,11 @@ def test_Wigner_D_symmetries(Rs, ell_max, eps):
     #
     #   D_{mp,m}(R) = \bar{D}_{m,mp}(\bar{R})
 
-    ϵ = 5 * ell_max * eps
-    D1 = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
-    D2 = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
-    wigner = sf.Wigner(ell_max)
-    ell_mp_m = sf.WignerDrange(0, ell_max)
+    ϵ = 5 * ell_max_slow * eps
+    D1 = np.zeros(sf.WignerDsize(0, ell_max_slow), dtype=complex)
+    D2 = np.zeros(sf.WignerDsize(0, ell_max_slow), dtype=complex)
+    wigner = sf.Wigner(ell_max_slow)
+    ell_mp_m = sf.WignerDrange(0, ell_max_slow)
 
     flipped_indices = np.array([
         sf.WignerDindex(ell, -mp, -m)
@@ -261,6 +261,7 @@ def slow_Wigner_D_element(alpha, beta, gamma, ell, mp, m):
 
 @slow
 def test_Wigner_D_values(special_angles, ell_max, eps):
+    ell_max = 6
     D = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
     wigner = sf.Wigner(ell_max)
     ell_mp_m = sf.WignerDrange(0, ell_max)
