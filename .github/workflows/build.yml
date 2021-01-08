@@ -29,15 +29,14 @@ jobs:
       - name: Install poetry
         run: |
           python -m pip install --upgrade pip
-          #python -m pip install poetry  # Only install poetry like this in containers
-          python -m pip install --no-warn-script-location --user --pre poetry -U  # Temporary: https://github.com/python-poetry/poetry/issues/2711
+          python -m pip install poetry  # Only install poetry like this in containers
 
       - name: Run poetry build, install, test
         run: |
           rm poetry.lock
           python -m poetry build
           python -m poetry install
-          python -m poetry run pytest --cov --cov-branch --cov-report=xml
+          python -m poetry run pytest --ell_max_slow=6 --run_slow_tests
 
       - name: Upload coverage
         if: "matrix.python-version == 3.8 && matrix.os == 'ubuntu-latest'"
