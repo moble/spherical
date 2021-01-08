@@ -44,10 +44,10 @@ def truncate_ell(self, new_ell_max):
 def grid(self, n_theta=None, n_phi=None, **kwargs):
     """Return values of function on an equi-angular grid
 
-    This method uses `spinsfast` to convert mode weights of spin-weighted function
-    to values on a grid.  The grid has `n_theta` evenly spaced points along the
-    usual polar (colatitude) angle theta, and `n_phi` evenly spaced points along
-    the usual azimuthal angle phi.  This grid corresponds to the one produced by
+    This method converts mode weights of spin-weighted function to values on a
+    grid.  The grid has `n_theta` evenly spaced points along the usual polar
+    (colatitude) angle theta, and `n_phi` evenly spaced points along the usual
+    azimuthal angle phi.  This grid corresponds to the one produced by
     `spherical.theta_phi`; see that function for specifics.
 
     The output array has one more dimension than this object; rather than the last
@@ -70,18 +70,34 @@ def grid(self, n_theta=None, n_phi=None, **kwargs):
         Additional keyword arguments are passed through to the Grid constructor on
         output
 
+    Notes
+    -----
+    If it is available, this method will use `spinsfast` to evaluate the function;
+    otherwise the `Wigner.evaluate` method from this module will be used.
+
     """
-    # raise NotImplementedError()
     import copy
     import numpy as np
-    import spinsfast
     from .. import Grid
     n_theta = n_theta or 2*self.ell_max+1
     n_phi = n_phi or n_theta
     metadata = copy.copy(self._metadata)
     metadata.pop('ell_max', None)
     metadata.update(**kwargs)
-    return Grid(spinsfast.salm2map(self.view(np.ndarray), self.spin_weight, self.ell_max, n_theta, n_phi), **metadata)
+    try:
+        import spinsfast
+        return Grid(
+            spinsfast.salm2map(self.view(np.ndarray), self.spin_weight, self.ell_max, n_theta, n_phi),
+            **metadata
+        )
+    except ImportError:
+        import quaternionic
+        from .. import theta_phi
+        rotors = quaternionic.array.from_spherical_coordinates(theta_phi(n_theta, n_phi))
+        return Grid(
+            self.evaluate(rotors),
+            **metadata
+        )
 
 
 def evaluate(self, rotors, **kwargs):
