@@ -6,6 +6,7 @@ import quaternionic
 
 from . import jit, complex_powers, WignerHsize, WignerHindex, WignerDsize, WignerDindex, Ysize, Yindex
 from .recursions.wignerH import ϵ, _step_1, _step_2, _step_3, _step_4, _step_5
+from .utilities.indexing import _WignerHindex
 
 inverse_4pi = 1.0 / (4 * np.pi)
 
@@ -381,7 +382,7 @@ class Wigner:
 
         """
         Hwedge = self.H(expiβ, workspace)
-        d = out if out is not None else np.empty(self.dsize, dtype=float)
+        d = out if out is not None else np.zeros(self.dsize, dtype=float)
         _fill_wigner_d(self.ell_min, self.ell_max, self.mp_max, d, Hwedge)
         return d
 
@@ -500,6 +501,10 @@ class Wigner:
                 f"This object has mp_max={self.mp_max}, which is not "
                 f"sufficient to compute sYlm values for spin weight s={s}"
             )
+        if out is not None and out.shape != (self.Ysize,):
+            raise ValueError(
+                f"Given output array has shape {out.shape}; it should be {(self.Ysize,)}"
+            )
         # # Note that we are using the conjugate relationship to swap the indices on 𝔇, because they are more easily calculated 
         # Rconjugate = quaternionic.array(R).conjugate()
         # z = Rconjugate.to_euler_phases
@@ -514,8 +519,66 @@ class Wigner:
         _fill_sYlm(self.ell_min, self.ell_max, self.mp_max, s, Y, Hwedge, zₐpowers, zᵧpowers)
         return Y
 
-    def rotate(self, modes, R):
-        pass
+    def rotate(self, modes, R, out=None, workspace=None):
+        """Rotate Modes object
+
+        Parameters
+        ----------
+        modes : Modes object
+        R : quaternionic.array
+            Unit quaternion representing the rotation of the frame in which the mode
+            weights are measured.
+        out : array_like, optional
+            Array into which the rotated mode weights should be written.  It should be
+            an array of complex with the same shape as `modes`.  If not present, the
+            array will be created.  In either case, the array will also be returned.
+        workspace : array_like, optional
+            A working array like the one returned by Wigner.new_workspace().  If not
+            present, this object's default workspace will be used.  Note that it is not
+            safe to use the same workspace on multiple threads.
+
+        Returns
+        -------
+        rotated_modes : array_like
+            This array holds the complex function values.  Its shape is
+            modes.shape[:-1]+R.shape[:-1].
+
+        """
+        ell_min = modes.ell_min
+        ell_max = modes.ell_max
+        spin_weight = modes.spin_weight
+
+        if ell_max > self.ell_max:
+            raise ValueError(
+                f"This object has ell_max={self.ell_max}, which is not "
+                f"sufficient for the input modes object with ell_max={ell_max}"
+            )
+
+        # Reinterpret inputs as 2-d np.arrays
+        mode_weights = modes.ndarray.reshape((-1, modes.shape[-1]))
+        R = quaternionic.array(R)
+
+        # Construct storage space
+        rotated_mode_weights = (
+            out
+            if out is not None
+            else np.zeros_like(mode_weights)
+        )
+
+        z = R.to_euler_phases
+
+        # Compute Wigner H elements for this quaternion
+        Hwedge = self.H(z[1], workspace)
+
+        _rotate(
+            mode_weights, rotated_mode_weights,
+            self.ell_min, self.ell_max, self.mp_max,
+            ell_min, ell_max, spin_weight,
+            Hwedge, z[0], z[2]
+        )
+
+        return rotated_mode_weights.reshape(modes.shape)
+
 
     def evaluate(self, modes, R, out=None, workspace=None):
         """Evaluate Modes object as function of rotations
@@ -572,7 +635,7 @@ class Wigner:
         quaternions = quaternionic.array(R).ndarray.reshape((-1, 4))
 
         # Construct storage space
-        z = np.empty(3, dtype=complex)
+        z = np.zeros(3, dtype=complex)
         function_values = (
             out
             if out is not None
@@ -587,8 +650,12 @@ class Wigner:
             # Compute Wigner H elements for this quaternion
             Hwedge = self.H(z[1], workspace)
 
-            raise NotImplementedError("Need separate arguments and logic for ell_min/max of H and of modes")
-            _evaluate(mode_weights, function_values[:, i_R], spin_weight, ell_min, ell_max, abs(spin_weight), Hwedge, z[0], z[2])
+            _evaluate(
+                mode_weights, function_values[:, i_R], spin_weight,
+                self.ell_min, self.ell_max, self.mp_max,
+                ell_min, ell_max,
+                Hwedge, z[0], z[2]
+            )
 
         return function_values.reshape(modes.shape[:-1] + R.shape[:-1])
 
@@ -675,7 +742,63 @@ def _fill_sYlm(ell_min, ell_max, mp_max, s, Y, Hwedge, zₐpowers, zᵧpowers):
 
 
 @jit
-def _evaluate(mode_weights, function_values, spin_weight, ell_min, ell_max, mp_max, Hwedge, zₐ, zᵧ):
+def _rotate(fₗₙ, fₗₘ, ell_min_w, ell_max_w, mp_max_w, ell_min_m, ell_max_m, spin_weight_m, Hwedge, zₐ, zᵧ):
+    """Helper function for Wigner.rotate"""
+    negative_terms = np.zeros(fₗₙ.shape[:-1], dtype=fₗₙ.dtype)
+    positive_terms = np.zeros(fₗₙ.shape[:-1], dtype=fₗₙ.dtype)
+
+    for ell in range(max(abs(spin_weight_m), ell_min_m), ell_max_m+1):
+        for m in range(-ell, ell+1):
+            # fₗₘ = ϵ₋ₘ zᵧᵐ {fₗ₀ Hˡ₀ₘ(R) + Σₚₙ [fₗ₋ₙ Hˡ₋ₙₘ(R) / zₐⁿ + fₗₙ (-1)ⁿ Hˡₙₘ(R) zₐⁿ]}
+            iₘ = Yindex(ell, m, ell_min_m)
+
+            # Initialize with n=0 term
+            fₗₘ[:, iₘ] = fₗₙ[:, Yindex(ell, 0, ell_min_m)] * Hwedge[WignerHindex(ell, 0, m, mp_max_w)]
+
+            if ell > 0:
+
+                # Compute dˡₙₘ terms recursively for 0<n<l, using symmetries for negative n, and
+                # simultaneously add the mode weights times zₐⁿ=exp[i(ϕₛ-ϕₐ)n] to the result using
+                # Horner form
+                # print(Hwedge.shape, WignerHindex(ell, -ell, m, mp_max_w), (ell, -ell, m, mp_max_w))
+                negative_terms[:] = (  # fₗ₋ₗ Hˡ₋ₗₘ
+                    fₗₙ[:, Yindex(ell, -ell, ell_min_m)]
+                    * Hwedge[WignerHindex(ell, -ell, m, mp_max_w)]
+                )
+                positive_terms[:] = (  # (-1)ˡ fₗₗ Hˡₗₘ
+                    (-1)**ell
+                    * fₗₙ[:, Yindex(ell, ell, ell_min_m)]
+                    * Hwedge[WignerHindex(ell, ell, m, mp_max_w)]
+                )
+                # print(2, positive_terms, negative_terms)
+                for n in range(ell-1, 0, -1):
+                    negative_terms *= zₐ.conjugate()
+                    negative_terms += (  # fₗ₋ₙ Hˡ₋ₙₘ
+                        fₗₙ[:, Yindex(ell, -n, ell_min_m)]
+                        * Hwedge[WignerHindex(ell, -n, m, mp_max_w)]
+                    )
+                    positive_terms *= zₐ
+                    positive_terms += (  # (-1)ⁿ fₗₙ Hˡₙₘ
+                        (-1)**n
+                        * fₗₙ[:, Yindex(ell, n, ell_min_m)]
+                        * Hwedge[WignerHindex(ell, n, m, mp_max_w)]
+                    )
+                    # print(f"3_{n}", positive_terms, negative_terms)
+                fₗₘ[:, iₘ] += negative_terms * zₐ.conjugate()
+                # print(4, ell, m, fₗₘ[0, :4])
+                fₗₘ[:, iₘ] += positive_terms * zₐ
+            # print(5, ell, m, fₗₘ[0, :4])
+
+            # Finish calculation of fₗₘ by multiplying by zᵧᵐ=exp[i(ϕₛ+ϕₐ)m]
+            fₗₘ[:, iₘ] *= ϵ(-m) * zᵧ**m
+            # if m >= 0:
+            #     fₗₘ[:, iₘ] *= ϵ(-m) * zᵧ**m
+            # else:
+            #     fₗₘ[:, iₘ] *= ϵ(-m) * (zᵧ**-m).conjugate()
+
+
+@jit
+def _evaluate(mode_weights, function_values, spin_weight, ell_min_w, ell_max_w, mp_max, ell_min_m, ell_max_m, Hwedge, zₐ, zᵧ):
     """Helper function for Wigner.evaluate"""
     i0 = max(0, abs(spin_weight)-1)
     z̄ₐ = zₐ.conjugate()
@@ -686,10 +809,10 @@ def _evaluate(mode_weights, function_values, spin_weight, ell_min, ell_max, mp_m
         f = function_values[i_modes:i_modes+1]
         fₗₘ = mode_weights[i_modes]
 
-        raise NotImplementedError("Need separate arguments and logic for ell_min/max of H and of modes")
-        for ell in range(max(ell_min, abs(spin_weight)), ell_max+1):
+        # raise NotImplementedError("Need separate arguments and logic for ell_min/max of H and of modes")
+        for ell in range(max(abs(spin_weight), ell_min_m), ell_max_m+1):
             # Establish some base indices, relative to which offsets are simple
-            i_fₗₘ = Yindex(ell_min, ell, 0)
+            i_fₗₘ = Yindex(ell, 0, ell_min_m)
             i_H = _WignerHindex(ell, 0, abs(spin_weight), mp_max)
             i_Hp = _WignerHindex(ell, spin_weight, abs(spin_weight), mp_max)
             i_Hm = _WignerHindex(ell, -spin_weight, abs(spin_weight), mp_max)

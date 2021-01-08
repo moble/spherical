@@ -10,10 +10,13 @@ import copy
 from sys import platform
 
 import numpy as np
+import quaternionic
 import spherical as sf
 import pytest
 
 from .conftest import requires_spinsfast
+
+slow = pytest.mark.slow
 
 
 def test_modes_creation():
@@ -663,32 +666,165 @@ def test_modes_ufuncs():
         #     m2 = sf.Modes(a2, spin_weight=s2, ell_min=ell_min2, ell_max=ell_max2)
 
 
-def test_evaluate():
-    import numpy as np
-    import quaternionic
-    import spherical
-    ell_max = 8
+@slow
+def test_modes_rotate(Rs, ell_max_slow, eps):
+    ell_min = 0
+    ell_max = max(3, ell_max_slow)
+    np.random.seed(1234)
+    ϵ = 10 * (2 * ell_max + 1) * eps
+    wigner = sf.Wigner(ell_max)
+
+    # R = np.exp(0.01 * quaternionic.z / 2)
+    # R = quaternionic.array(np.random.rand(4)).normalized
+    for R in Rs:
+        for spin_weight in range(-2, 2+1):
+            a1 = np.random.rand(23, sf.Ysize(ell_min, ell_max)*2).view(complex)
+            a1[:, sf.Yindex(ell_min, -ell_min, ell_min):sf.Yindex(abs(spin_weight), -abs(spin_weight), ell_min)] = 0.0
+
+            # print(f"zeroed {sf.Yindex(ell_min, -ell_min, ell_min)}:{sf.Yindex(abs(spin_weight), -abs(spin_weight), ell_min)}")
+            # # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            # # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            # import warnings
+            # warnings.warn(f"Simplified inputs just for testing")
+            # a1[:, :41] = 0.0
+            # a1[:, sf.Yindex(3, -1, ell_min)] = 1.0 + 3.1j
+            # # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            # # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+            m1 = sf.Modes(a1, spin_weight=spin_weight, ell_min=ell_min, ell_max=ell_max)
+
+            f1 = m1.rotate(R)
+            assert f1.shape == m1.shape
+
+            𝔇 = wigner.D(R)
+            f2 = np.zeros_like(m1.ndarray)
+            for ell in range(max(abs(spin_weight), ell_min), ell_max+1):
+                i1 = sf.Yindex(ell, -ell, ell_min)
+                i2 = sf.Yindex(ell, ell, ell_min) + 1
+                𝔇ˡ = 𝔇[sf.WignerDindex(ell, -ell, -ell, ell_min):sf.WignerDindex(ell, ell, ell, ell_min)+1]
+                𝔇ˡ = 𝔇ˡ.reshape(2*ell+1, 2*ell+1)
+                f2[..., i1:i2] = np.tensordot(a1[..., i1:i2], 𝔇ˡ, axes=([-1], [0]))
+            assert f2.shape == m1.shape
+
+            if not np.allclose(f1, f2, rtol=1e-8, atol=1e-8):
+                print()
+                print("shapes:", f1.shape, f2.shape)
+                print()
+                print(f"m1 = np.array({(m1).tolist()})")
+                print()
+                print(f"f1 = np.array({(f1).tolist()})")
+                print()
+                print(f"f2 = np.array({(f2).tolist()})")
+                print()
+                print("f1 / f2 = ", (f1 / f2).tolist())
+
+            assert np.allclose(f1, f2, rtol=ϵ, atol=ϵ), f"{np.max(np.abs(f1-f2))} > {ϵ}"
+
+
+@slow
+def test_modes_evaluate(ell_max_slow, eps):
+    ell_max = max(3, ell_max_slow)
+    np.random.seed(1234)
+    ϵ = 10 * (2 * ell_max + 1) * eps
     n_theta = n_phi = 2 * ell_max + 1
-    rotors = quaternionic.array.from_spherical_coordinates(spherical.theta_phi(n_theta, n_phi))
-    # rotors = quaternionic.array(np.random.rand(17, 4)).normalized
-    for s in range(-2, 2 + 1):
+
+    rotors = quaternionic.array.from_spherical_coordinates(sf.theta_phi(n_theta, n_phi))
+    # rotors = quaternionic.array(np.random.rand(n_theta, n_phi, 4)).normalized
+
+    wigner = sf.Wigner(ell_max)
+
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    import warnings
+    warnings.warn(f"Restricting to s=0 just for testing")
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # for s in range(-2, 2 + 1):
+    for s in [0]:
+        # # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # import warnings
+        # warnings.warn(f"Skipping s=0 just for testing")
+        # if s == 0: continue
+        # # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
         ell_min = abs(s)
-        a1 = np.zeros(sf.LM_total_size(ell_min, ell_max), dtype=complex)
-        a1[sf.LM_index(2, 0, ell_min)] = 1.0
-        # test_ell_max = 1
-        # a1[:sf.LM_index(test_ell_max+1, -(test_ell_max+1), ell_min)] = np.random.rand(sf.LM_total_size(ell_min, test_ell_max)*2).view(complex)
-        # a1 = np.random.rand(11, sf.LM_total_size(ell_min, ell_max)*2).view(complex)
+
+        print()
+
+        for ell in range(ell_min, ell_max+1):
+            for m in range(-ell, ell+1):
+
+                a1 = np.random.rand(1, sf.Ysize(ell_min, ell_max)*2).view(complex)
+
+                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                import warnings
+                warnings.warn(f"Simplified inputs just for testing")
+                a1[:] = 0
+                a1[:, sf.Yindex(ell, m, ell_min)] = 1.0 + 3.1j
+                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                m1 = sf.Modes(a1, spin_weight=s, ell_min=ell_min, ell_max=ell_max)
+
+                f1 = m1.evaluate(rotors)
+                assert f1.shape == m1.shape[:-1] + rotors.shape[:-1]
+
+                sYlm = np.zeros((sf.Ysize(0, ell_max),) + rotors.shape[:-1], dtype=complex)
+                for i, Rs in enumerate(rotors):
+                    for j, R in enumerate(Rs):
+                        wigner.sYlm(s, R, out=sYlm[:, i, j])
+                f2 = np.tensordot(m1.view(np.ndarray), sYlm, axes=([-1], [0]))
+                assert f2.shape == m1.shape[:-1] + rotors.shape[:-1]
+
+                if not np.allclose(f1, f2, rtol=ϵ, atol=ϵ):
+                    print(ell, m)
+
+                # # print()
+                # # print(f"s = {s}")
+                # if s == 0 or not np.allclose(f1, f2, rtol=1e-8, atol=1e-8):
+                #     print()
+                #     print(f"s = {s}")
+                #     print()
+                #     print("shapes:", f1.shape, f2.shape)
+                #     print()
+                #     print(f"f1[0, 0] = np.array({(f1[0, :, 0]).tolist()})")
+                #     print()
+                #     print(f"f2[0, 0] = np.array({(f2[0, :, 0]).tolist()})")
+                #     print()
+                #     print("f1 / f2 = ", (f1[0, :, 0] / f2[0, :, 0]).tolist())
+                # assert np.allclose(f1, f2, rtol=ϵ, atol=ϵ), f"max|f1-f2|={np.max(np.abs(f1-f2))} > ϵ={ϵ}"
+    assert False
+
+
+@slow
+def test_modes_grid(ell_max_slow, eps):
+    ell_max = max(3, ell_max_slow)
+    np.random.seed(1234)
+    wigner = sf.Wigner(ell_max)
+    ϵ = 10 * (2 * ell_max + 1) * eps
+    n_theta = n_phi = 2 * ell_max + 1
+
+    rotors = quaternionic.array.from_spherical_coordinates(sf.theta_phi(n_theta, n_phi))
+
+    for s in range(-2, 2 + 1):
+
+        ell_min = abs(s)
+
+        a1 = np.random.rand(11, sf.LM_total_size(ell_min, ell_max)*2).view(complex)
+
         m1 = sf.Modes(a1, spin_weight=s, ell_min=ell_min, ell_max=ell_max)
-        f1 = m1.evaluate(rotors)
+
+        f1 = m1.grid(n_theta, n_phi)
         assert f1.shape == m1.shape[:-1] + rotors.shape[:-1]
-        f2 = m1.grid(n_theta, n_phi)
+
+        sYlm = np.zeros((sf.Ysize(0, ell_max),) + rotors.shape[:-1], dtype=complex)
+        for i, Rs in enumerate(rotors):
+            for j, R in enumerate(Rs):
+                wigner.sYlm(s, R, out=sYlm[:, i, j])
+        f2 = np.tensordot(m1.view(np.ndarray), sYlm, axes=([-1], [0]))
         assert f2.shape == m1.shape[:-1] + rotors.shape[:-1]
-        print()
-        print("shapes:", f1.shape, f2.shape)
-        print()
-        print("f1 = ", (f1).tolist())
-        print()
-        print("f2 = ", (f2).tolist())
-        print()
-        print("f1 / f2 = ", (f1 / f2.ndarray).tolist())
-        assert np.allclose(f1, f2.ndarray, rtol=1e-8, atol=1e-8)
+
+        assert np.allclose(f1.ndarray, f2, rtol=ϵ, atol=ϵ), f"max|f1-f2|={np.max(np.abs(f1.ndarray-f2))} > ϵ={ϵ}"
