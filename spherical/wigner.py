@@ -760,7 +760,6 @@ def _rotate(fₗₙ, fₗₘ, ell_min_w, ell_max_w, mp_max_w, ell_min_m, ell_max
                 # Compute dˡₙₘ terms recursively for 0<n<l, using symmetries for negative n, and
                 # simultaneously add the mode weights times zₐⁿ=exp[i(ϕₛ-ϕₐ)n] to the result using
                 # Horner form
-                # print(Hwedge.shape, WignerHindex(ell, -ell, m, mp_max_w), (ell, -ell, m, mp_max_w))
                 negative_terms[:] = (  # fₗ₋ₗ Hˡ₋ₗₘ
                     fₗₙ[:, Yindex(ell, -ell, ell_min_m)]
                     * Hwedge[WignerHindex(ell, -ell, m, mp_max_w)]
@@ -770,7 +769,6 @@ def _rotate(fₗₙ, fₗₘ, ell_min_w, ell_max_w, mp_max_w, ell_min_m, ell_max
                     * fₗₙ[:, Yindex(ell, ell, ell_min_m)]
                     * Hwedge[WignerHindex(ell, ell, m, mp_max_w)]
                 )
-                # print(2, positive_terms, negative_terms)
                 for n in range(ell-1, 0, -1):
                     negative_terms *= zₐ.conjugate()
                     negative_terms += (  # fₗ₋ₙ Hˡ₋ₙₘ
@@ -783,18 +781,11 @@ def _rotate(fₗₙ, fₗₘ, ell_min_w, ell_max_w, mp_max_w, ell_min_m, ell_max
                         * fₗₙ[:, Yindex(ell, n, ell_min_m)]
                         * Hwedge[WignerHindex(ell, n, m, mp_max_w)]
                     )
-                    # print(f"3_{n}", positive_terms, negative_terms)
                 fₗₘ[:, iₘ] += negative_terms * zₐ.conjugate()
-                # print(4, ell, m, fₗₘ[0, :4])
                 fₗₘ[:, iₘ] += positive_terms * zₐ
-            # print(5, ell, m, fₗₘ[0, :4])
 
             # Finish calculation of fₗₘ by multiplying by zᵧᵐ=exp[i(ϕₛ+ϕₐ)m]
             fₗₘ[:, iₘ] *= ϵ(-m) * zᵧ**m
-            # if m >= 0:
-            #     fₗₘ[:, iₘ] *= ϵ(-m) * zᵧ**m
-            # else:
-            #     fₗₘ[:, iₘ] *= ϵ(-m) * (zᵧ**-m).conjugate()
 
 
 @jit
