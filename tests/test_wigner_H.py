@@ -36,7 +36,7 @@ def test_H(eps):
                 # sympyd = sympy.re(sympy.N(sympyWignerD(n, mp, m, alpha, -beta, gamma).doit()))
                 # sphericald = ϵ(-mp) * ϵ(m) * Hnmpm[sf.WignerHindex(n, mp, m)]
                 error = float(abs(sympyd-sphericald))
-                assert error < 3*eps, f"Testing Wigner d recursion: n={n}, m'={mp}, m={m}, sympy:{sympyd}, spherical:{sphericald}, error={error}"
+                assert error < 4.1*eps, f"Testing Wigner d recursion: n={n}, m'={mp}, m={m}, sympy:{sympyd}, spherical:{sphericald}, error={error}"
                 max_error = max(error, max_error)
 
     # print(f"\nTesting H (Wigner d recursion): max error = {max_error}")
