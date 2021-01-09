@@ -125,57 +125,58 @@ def _step_2(g, h, n_max, mp_max, Hwedge, Hextra, Hv, cosβ, sinβ):
     from its symmetric equivalent H^{0, 1}_{n} in this step.
 
     """
-    # n = 1
-    n0n_index = WignerHindex(1, 0, 1, mp_max)
-    nn_index = nm_index(1, 1)
-    Hwedge[n0n_index] = sqrt3  # Un-normalized
-    Hwedge[n0n_index-1] = (g[nn_index-1] * cosβ) * inverse_sqrt2  # Normalized
-    # n = 2, ..., n_max+1
-    for n in range(2, n_max+2):
-        if n <= n_max:
-            n0n_index = WignerHindex(n, 0, n, mp_max)
-            H = Hwedge
-        else:
-            n0n_index = n
-            H = Hextra
-        nm10nm1_index = WignerHindex(n-1, 0, n-1, mp_max)
-        nn_index = nm_index(n, n)
-        const = np.sqrt(1.0 + 0.5/n)
-        gi = g[nn_index-1]
-        # m = n
-        H[n0n_index] = const * Hwedge[nm10nm1_index]
-        # m = n-1
-        H[n0n_index-1] = gi * cosβ * H[n0n_index]
-        # m = n-2, ..., 1
-        for i in range(2, n):
-            gi = g[nn_index-i]
-            hi = h[nn_index-i]
-            H[n0n_index-i] = gi * cosβ * H[n0n_index-i+1] - hi * sinβ**2 * H[n0n_index-i+2]
-        # m = 0, with normalization
-        const = 1.0 / np.sqrt(4*n+2)
-        gi = g[nn_index-n]
-        hi = h[nn_index-n]
-        H[n0n_index-n] = (gi * cosβ * H[n0n_index-n+1] - hi * sinβ**2 * H[n0n_index-n+2]) * const
-        # Now, loop back through, correcting the normalization for this row, except for n=n element
-        prefactor = const
-        for i in range(1, n):
+    if n_max > 0:
+        # n = 1
+        n0n_index = WignerHindex(1, 0, 1, mp_max)
+        nn_index = nm_index(1, 1)
+        Hwedge[n0n_index] = sqrt3  # Un-normalized
+        Hwedge[n0n_index-1] = (g[nn_index-1] * cosβ) * inverse_sqrt2  # Normalized
+        # n = 2, ..., n_max+1
+        for n in range(2, n_max+2):
+            if n <= n_max:
+                n0n_index = WignerHindex(n, 0, n, mp_max)
+                H = Hwedge
+            else:
+                n0n_index = n
+                H = Hextra
+            nm10nm1_index = WignerHindex(n-1, 0, n-1, mp_max)
+            nn_index = nm_index(n, n)
+            const = np.sqrt(1.0 + 0.5/n)
+            gi = g[nn_index-1]
+            # m = n
+            H[n0n_index] = const * Hwedge[nm10nm1_index]
+            # m = n-1
+            H[n0n_index-1] = gi * cosβ * H[n0n_index]
+            # m = n-2, ..., 1
+            for i in range(2, n):
+                gi = g[nn_index-i]
+                hi = h[nn_index-i]
+                H[n0n_index-i] = gi * cosβ * H[n0n_index-i+1] - hi * sinβ**2 * H[n0n_index-i+2]
+            # m = 0, with normalization
+            const = 1.0 / np.sqrt(4*n+2)
+            gi = g[nn_index-n]
+            hi = h[nn_index-n]
+            H[n0n_index-n] = (gi * cosβ * H[n0n_index-n+1] - hi * sinβ**2 * H[n0n_index-n+2]) * const
+            # Now, loop back through, correcting the normalization for this row, except for n=n element
+            prefactor = const
+            for i in range(1, n):
+                prefactor *= sinβ
+                H[n0n_index-n+i] *= prefactor
+            # Supply extra edge cases as noted in docstring
+            if n <= n_max:
+                Hv[nm_index(n, 1)] = Hwedge[WignerHindex(n, 0, 1, mp_max)]
+                Hv[nm_index(n, 0)] = Hwedge[WignerHindex(n, 0, 1, mp_max)]
+        # Correct normalization of m=n elements
+        prefactor = 1.0
+        for n in range(1, n_max+1):
             prefactor *= sinβ
-            H[n0n_index-n+i] *= prefactor
+            Hwedge[WignerHindex(n, 0, n, mp_max)] *= prefactor / np.sqrt(4*n+2)
+        for n in [n_max+1]:
+            prefactor *= sinβ
+            Hextra[n] *= prefactor / np.sqrt(4*n+2)
         # Supply extra edge cases as noted in docstring
-        if n <= n_max:
-            Hv[nm_index(n, 1)] = Hwedge[WignerHindex(n, 0, 1, mp_max)]
-            Hv[nm_index(n, 0)] = Hwedge[WignerHindex(n, 0, 1, mp_max)]
-    # Correct normalization of m=n elements
-    prefactor = 1.0
-    for n in range(1, n_max+1):
-        prefactor *= sinβ
-        Hwedge[WignerHindex(n, 0, n, mp_max)] *= prefactor / np.sqrt(4*n+2)
-    for n in [n_max+1]:
-        prefactor *= sinβ
-        Hextra[n] *= prefactor / np.sqrt(4*n+2)
-    # Supply extra edge cases as noted in docstring
-    Hv[nm_index(1, 1)] = Hwedge[WignerHindex(1, 0, 1, mp_max)]
-    Hv[nm_index(1, 0)] = Hwedge[WignerHindex(1, 0, 1, mp_max)]
+        Hv[nm_index(1, 1)] = Hwedge[WignerHindex(1, 0, 1, mp_max)]
+        Hv[nm_index(1, 0)] = Hwedge[WignerHindex(1, 0, 1, mp_max)]
 
 
 @jit
@@ -188,32 +189,33 @@ def _step_3(a, b, n_max, mp_max, Hwedge, Hextra, cosβ, sinβ):
                                    − a^{m}_{n} sinβ H^{0, m}_{n+1}
 
     """
-    for n in range(1, n_max+1):
-        # m = 1, ..., n
-        i1 = WignerHindex(n, 1, 1, mp_max)
-        if n+1 <= n_max:
-            i2 = WignerHindex(n+1, 0, 0, mp_max)
-            H2 = Hwedge
-        else:
-            i2 = 0
-            H2 = Hextra
-        i3 = nm_index(n+1, 0)
-        i4 = nabsm_index(n, 1)
-        inverse_b5 = 1.0 / b[i3]
-        for i in range(n):
-            b6 = b[-i+i3-2]
-            b7 = b[i+i3]
-            a8 = a[i+i4]
-            Hwedge[i+i1] = inverse_b5 * (
-                0.5 * (
-                      b6 * (1-cosβ) * H2[i+i2+2]
-                    - b7 * (1+cosβ) * H2[i+i2]
+    if n_max > 0 and mp_max > 0:
+        for n in range(1, n_max+1):
+            # m = 1, ..., n
+            i1 = WignerHindex(n, 1, 1, mp_max)
+            if n+1 <= n_max:
+                i2 = WignerHindex(n+1, 0, 0, mp_max)
+                H2 = Hwedge
+            else:
+                i2 = 0
+                H2 = Hextra
+            i3 = nm_index(n+1, 0)
+            i4 = nabsm_index(n, 1)
+            inverse_b5 = 1.0 / b[i3]
+            for i in range(n):
+                b6 = b[-i+i3-2]
+                b7 = b[i+i3]
+                a8 = a[i+i4]
+                Hwedge[i+i1] = inverse_b5 * (
+                    0.5 * (
+                          b6 * (1-cosβ) * H2[i+i2+2]
+                        - b7 * (1+cosβ) * H2[i+i2]
+                    )
+                    - a8 * sinβ * H2[i+i2+1]
                 )
-                - a8 * sinβ * H2[i+i2+1]
-            )
 
 
-#@jit
+@jit
 def _step_4(d, n_max, mp_max, Hwedge, Hv):
     """Recursively compute H^{m'+1, m}_{n}(β) for m'=1,...,n−1, m=m',...,n using relation (50) resolved
     with respect to H^{m'+1, m}_{n}:
@@ -225,41 +227,42 @@ def _step_4(d, n_max, mp_max, Hwedge, Hv):
     (where the last term drops out for m=n).
 
     """
-    for n in range(2, n_max+1):
-        for mp in range(1, min(n, mp_max)):
-            # m = m', ..., n-1
-            # i1 = WignerHindex(n, mp+1, mp, mp_max)
-            i1 = WignerHindex(n, mp+1, mp+1, mp_max) - 1
-            i2 = WignerHindex(n, mp-1, mp, mp_max)
-            # i3 = WignerHindex(n, mp, mp-1, mp_max)
-            i3 = WignerHindex(n, mp, mp, mp_max) - 1
-            i4 = WignerHindex(n, mp, mp+1, mp_max)
-            i5 = nm_index(n, mp)
-            i6 = nm_index(n, mp-1)
-            inverse_d5 = 1.0 / d[i5]
-            d6 = d[i6]
-            for i in [0]:
-                d7 = d[i+i6]
-                d8 = d[i+i5]
-                Hv[i+nm_index(n, mp+1)] = inverse_d5 * (
-                      d6 * Hwedge[i+i2]
-                    - d7 * Hv[i+nm_index(n, mp)]
-                    + d8 * Hwedge[i+i4]
-                )
-            for i in range(1, n-mp):
-                d7 = d[i+i6]
-                d8 = d[i+i5]
-                Hwedge[i+i1] = inverse_d5 * (
-                      d6 * Hwedge[i+i2]
-                    - d7 * Hwedge[i+i3]
-                    + d8 * Hwedge[i+i4]
-                )
-            # m = n
-            for i in [n-mp]:
-                Hwedge[i+i1] = inverse_d5 * (
-                      d6 * Hwedge[i+i2]
-                    - d[i+i6] * Hwedge[i+i3]
-                )
+    if n_max > 0 and mp_max > 0:
+        for n in range(2, n_max+1):
+            for mp in range(1, min(n, mp_max)):
+                # m = m', ..., n-1
+                # i1 = WignerHindex(n, mp+1, mp, mp_max)
+                i1 = WignerHindex(n, mp+1, mp+1, mp_max) - 1
+                i2 = WignerHindex(n, mp-1, mp, mp_max)
+                # i3 = WignerHindex(n, mp, mp-1, mp_max)
+                i3 = WignerHindex(n, mp, mp, mp_max) - 1
+                i4 = WignerHindex(n, mp, mp+1, mp_max)
+                i5 = nm_index(n, mp)
+                i6 = nm_index(n, mp-1)
+                inverse_d5 = 1.0 / d[i5]
+                d6 = d[i6]
+                for i in [0]:
+                    d7 = d[i+i6]
+                    d8 = d[i+i5]
+                    Hv[i+nm_index(n, mp+1)] = inverse_d5 * (
+                          d6 * Hwedge[i+i2]
+                        - d7 * Hv[i+nm_index(n, mp)]
+                        + d8 * Hwedge[i+i4]
+                    )
+                for i in range(1, n-mp):
+                    d7 = d[i+i6]
+                    d8 = d[i+i5]
+                    Hwedge[i+i1] = inverse_d5 * (
+                          d6 * Hwedge[i+i2]
+                        - d7 * Hwedge[i+i3]
+                        + d8 * Hwedge[i+i4]
+                    )
+                # m = n
+                for i in [n-mp]:
+                    Hwedge[i+i1] = inverse_d5 * (
+                          d6 * Hwedge[i+i2]
+                        - d[i+i6] * Hwedge[i+i3]
+                    )
 
 
 @jit
@@ -278,48 +281,49 @@ def _step_5(d, n_max, mp_max, Hwedge, Hv):
     also requires setting the (m',m)=(0,-1) components before beginning this loop.
 
     """
-    for n in range(0, n_max+1):
-        for mp in range(0, -min(n, mp_max), -1):
-            # m = -m', ..., n-1
-            # i1 = WignerHindex(n, mp-1, -mp, mp_max)
-            i1 = WignerHindex(n, mp-1, -mp+1, mp_max) - 1
-            # i2 = WignerHindex(n, mp+1, -mp, mp_max)
-            i2 = WignerHindex(n, mp+1, -mp+1, mp_max) - 1
-            # i3 = WignerHindex(n, mp, -mp-1, mp_max)
-            i3 = WignerHindex(n, mp, -mp, mp_max) - 1
-            i4 = WignerHindex(n, mp, -mp+1, mp_max)
-            i5 = nm_index(n, mp-1)
-            i6 = nm_index(n, mp)
-            i7 = nm_index(n, -mp-1)
-            i8 = nm_index(n, -mp)
-            inverse_d5 = 1.0 / d[i5]
-            d6 = d[i6]
-            for i in [0]:
-                d7 = d[i+i7]
-                d8 = d[i+i8]
-                if mp == 0:
-                    Hv[i+nm_index(n, mp-1)] = inverse_d5 * (
-                          d6 * Hv[i+nm_index(n, mp+1)]
-                        + d7 * Hv[i+nm_index(n, mp)]
-                        - d8 * Hwedge[i+i4]
-                    )
-                else:
-                    Hv[i+nm_index(n, mp-1)] = inverse_d5 * (
+    if n_max > 0 and mp_max > 0:
+        for n in range(0, n_max+1):
+            for mp in range(0, -min(n, mp_max), -1):
+                # m = -m', ..., n-1
+                # i1 = WignerHindex(n, mp-1, -mp, mp_max)
+                i1 = WignerHindex(n, mp-1, -mp+1, mp_max) - 1
+                # i2 = WignerHindex(n, mp+1, -mp, mp_max)
+                i2 = WignerHindex(n, mp+1, -mp+1, mp_max) - 1
+                # i3 = WignerHindex(n, mp, -mp-1, mp_max)
+                i3 = WignerHindex(n, mp, -mp, mp_max) - 1
+                i4 = WignerHindex(n, mp, -mp+1, mp_max)
+                i5 = nm_index(n, mp-1)
+                i6 = nm_index(n, mp)
+                i7 = nm_index(n, -mp-1)
+                i8 = nm_index(n, -mp)
+                inverse_d5 = 1.0 / d[i5]
+                d6 = d[i6]
+                for i in [0]:
+                    d7 = d[i+i7]
+                    d8 = d[i+i8]
+                    if mp == 0:
+                        Hv[i+nm_index(n, mp-1)] = inverse_d5 * (
+                              d6 * Hv[i+nm_index(n, mp+1)]
+                            + d7 * Hv[i+nm_index(n, mp)]
+                            - d8 * Hwedge[i+i4]
+                        )
+                    else:
+                        Hv[i+nm_index(n, mp-1)] = inverse_d5 * (
+                              d6 * Hwedge[i+i2]
+                            + d7 * Hv[i+nm_index(n, mp)]
+                            - d8 * Hwedge[i+i4]
+                        )
+                for i in range(1, n+mp):
+                    d7 = d[i+i7]
+                    d8 = d[i+i8]
+                    Hwedge[i+i1] = inverse_d5 * (
                           d6 * Hwedge[i+i2]
-                        + d7 * Hv[i+nm_index(n, mp)]
+                        + d7 * Hwedge[i+i3]
                         - d8 * Hwedge[i+i4]
                     )
-            for i in range(1, n+mp):
-                d7 = d[i+i7]
-                d8 = d[i+i8]
+                # m = n
+                i = n+mp
                 Hwedge[i+i1] = inverse_d5 * (
                       d6 * Hwedge[i+i2]
-                    + d7 * Hwedge[i+i3]
-                    - d8 * Hwedge[i+i4]
+                    + d[i+i7] * Hwedge[i+i3]
                 )
-            # m = n
-            i = n+mp
-            Hwedge[i+i1] = inverse_d5 * (
-                  d6 * Hwedge[i+i2]
-                + d[i+i7] * Hwedge[i+i3]
-            )
