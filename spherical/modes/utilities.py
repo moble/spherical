@@ -102,7 +102,7 @@ def grid(self, n_theta=None, n_phi=None, use_spinsfast=True, **kwargs):
 def evaluate(self, rotors, **kwargs):
     """Return values of function on input rotors"""
     from .. import Wigner
-    wigner = Wigner(self.ell_max, self.ell_min, mp_max=abs(self.spin_weight))
+    wigner = Wigner(self.ell_max, ell_min=self.ell_min, mp_max=abs(self.spin_weight))
     return wigner.evaluate(self, rotors)
 
 
