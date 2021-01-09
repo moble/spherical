@@ -6,13 +6,17 @@
 import sympy
 import numpy as np
 import spherical as sf
+import pytest
 
 from .conftest import requires_sympy
 
+slow = pytest.mark.slow
+
 
 @requires_sympy
-def test_H(eps):
-    from sympy.physics.quantum.spin import WignerD as sympyWignerD
+@slow
+def test_H_vs_sympy(ell_max_slow, eps):
+    from sympy.physics.quantum.spin import WignerD as Wigner_D_sympy
 
     """Eq. (29) of arxiv:1403.7698: d^{m',m}_{n}(β) = ϵ(m') ϵ(-m) H^{m',m}_{n}(β)"""
 
@@ -22,23 +26,20 @@ def test_H(eps):
         eps[m >= 0] = (-1)**m[m >= 0]
         return eps
 
-    ell_max = 4
+    ell_max = max(4, ell_max_slow // 2)
     alpha, beta, gamma = 0.0, 0.1, 0.0
-    w = sf.Wigner(ell_max)
-    Hnmpm = w.H(np.exp(1j * beta))
     max_error = 0.0
 
-    for n in range(w.ell_max+1):
-        for mp in range(-n, n+1):
-            for m in range(-n, n+1):
-                sympyd = sympy.re(sympy.N(sympyWignerD(n, mp, m, alpha, beta, gamma).doit()))
-                sphericald = ϵ(mp) * ϵ(-m) * Hnmpm[sf.WignerHindex(n, mp, m)]
-                # sympyd = sympy.re(sympy.N(sympyWignerD(n, mp, m, alpha, -beta, gamma).doit()))
-                # sphericald = ϵ(-mp) * ϵ(m) * Hnmpm[sf.WignerHindex(n, mp, m)]
-                error = float(abs(sympyd-sphericald))
-                assert error < 4.1 * eps, (
-                    f"Testing Wigner d recursion: n={n}, m'={mp}, m={m}, "
-                    f"sympy:{sympyd}, spherical:{sphericald}, error={error}"
-                )
-    #             max_error = max(error, max_error)
-    # print(f"\nTesting H (Wigner d recursion): max error = {max_error}")
+    for mp_max in range(ell_max):
+        w = sf.Wigner(ell_max, mp_max=mp_max)
+        Hnmpm = w.H(np.exp(1j * beta))
+        for n in range(w.ell_max+1):
+            for mp in range(-min(n, mp_max), min(n, mp_max)+1):
+                for m in range(-n, n+1):
+                    sympyd = sympy.re(sympy.N(Wigner_D_sympy(n, mp, m, alpha, beta, gamma).doit()))
+                    sphericald = ϵ(mp) * ϵ(-m) * Hnmpm[sf.WignerHindex(n, mp, m, mp_max)]
+                    error = float(abs(sympyd-sphericald))
+                    assert error < 4.1 * eps, (
+                        f"Testing Wigner d recursion with n={n}, m'={mp}, m={m}, mp_max={mp_max}, "
+                        f"sympyd={sympyd}, sphericald={sphericald}, error={error}"
+                    )
