@@ -505,9 +505,6 @@ class Wigner:
             raise ValueError(
                 f"Given output array has shape {out.shape}; it should be {(self.Ysize,)}"
             )
-        # # Note that we are using the conjugate relationship to swap the indices on 𝔇, because they are more easily calculated 
-        # Rconjugate = quaternionic.array(R).conjugate()
-        # z = Rconjugate.to_euler_phases
 
         R = quaternionic.array(R)
         z = R.to_euler_phases
@@ -696,12 +693,7 @@ def _fill_wigner_D(ell_min, ell_max, mp_max, 𝔇, Hwedge, zₐpowers, zᵧpower
 @jit
 def _fill_sYlm(ell_min, ell_max, mp_max, s, Y, Hwedge, zₐpowers, zᵧpowers):
     """Helper function for Wigner.sYlm"""
-    # import warnings
-    # warnings.warn("Jit commented out temporarily for debugging")
-    #
-    #         ₛYₗₘ(R) = (-1)ˢ √((2ℓ+1)/(4π)) 𝔇ˡₘ₋ₛ(R)
-    #                = (-1)ˢ √((2ℓ+1)/(4π)) 𝔇̄ˡ₋ₛₘ(R̄)
-
+    #  ₛYₗₘ(R) = (-1)ˢ √((2ℓ+1)/(4π)) 𝔇ˡₘ₋ₛ(R)
     ell0 = max(abs(s), ell_min)
     Y[:Yindex(ell0, -ell0, ell_min)] = 0.0
     if s >= 0:
