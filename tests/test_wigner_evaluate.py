@@ -22,15 +22,12 @@ def test_wigner_evaluate(ell_max_slow, eps):
     ϵ = 10 * (2 * ell_max + 1) * eps
     n_theta = n_phi = 2 * ell_max + 1
     max_s = 2
-
-    # print()
+    wigner = sf.Wigner(ell_max, mp_max=max_s)
 
     for rotors in [
             quaternionic.array.from_spherical_coordinates(sf.theta_phi(n_theta, n_phi)),
             quaternionic.array(np.random.rand(n_theta, n_phi, 4)).normalized
     ]:
-
-        wigner = sf.Wigner(ell_max, mp_max=max_s)
 
         for s in range(-max_s, max_s + 1):
             ell_min = abs(s)
@@ -53,17 +50,33 @@ def test_wigner_evaluate(ell_max_slow, eps):
             f2 = np.tensordot(m1.view(np.ndarray), sYlm, axes=([-1], [0]))
             assert f2.shape == m1.shape[:-1] + rotors.shape[:-1]
 
-            if not np.allclose(f1, f2, rtol=ϵ, atol=ϵ):
-                print()
-                print(ell, m)
-                print()
-                print(f"s = {s}")
-                print()
-                print("shapes:", f1.shape, f2.shape)
-                print()
-                print(f"f1[0, 0] = np.array({(f1[0, :, 0]).tolist()})")
-                print()
-                print(f"f2[0, 0] = np.array({(f2[0, :, 0]).tolist()})")
-                print()
-                print("f1 / f2 = ", (f1[0, :, 0] / f2[0, :, 0]).tolist())
             assert np.allclose(f1, f2, rtol=ϵ, atol=ϵ), f"max|f1-f2|={np.max(np.abs(f1-f2))} > ϵ={ϵ}"
+
+
+@requires_spinsfast
+@slow
+def test_wigner_spinsfast(ell_max_slow, eps):
+    # import time
+
+    ell_max = max(3, ell_max_slow)
+    np.random.seed(1234)
+    ϵ = 10 * (2 * ell_max + 1) * eps
+    n_theta = n_phi = 2 * ell_max + 1
+    max_s = 2
+    wigner = sf.Wigner(ell_max, mp_max=max_s)
+
+    rotors = quaternionic.array.from_spherical_coordinates(sf.theta_phi(n_theta, n_phi))
+
+    for s in range(-max_s, max_s + 1):
+        ell_min = abs(s)
+
+        a1 = np.random.rand(7, sf.Ysize(ell_min, ell_max)*2).view(complex)
+        m1 = sf.Modes(a1, spin_weight=s, ell_min=ell_min, ell_max=ell_max)
+
+        f1 = wigner.evaluate(m1, rotors)
+        assert f1.shape == m1.shape[:-1] + rotors.shape[:-1]
+
+        f2 = m1.grid(n_theta, n_phi, use_spinsfast=True)
+        assert f2.shape == m1.shape[:-1] + rotors.shape[:-1]
+
+        assert np.allclose(f1, f2.ndarray, rtol=ϵ, atol=ϵ), f"max|f1-f2|={np.max(np.abs(f1-f2.ndarray))} > ϵ={ϵ}"
