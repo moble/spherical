@@ -665,6 +665,34 @@ def test_modes_ufuncs():
         #     m2 = sf.Modes(a2, spin_weight=s2, ell_min=ell_min2, ell_max=ell_max2)
 
 
+@requires_spinsfast
+@slow
+def test_modes_grid_variants(ell_max, eps):
+    ell_max = max(3, ell_max)
+    s_max = 2
+    np.random.seed(1234)
+    wigner = sf.Wigner(ell_max, mp_max=s_max)
+    ϵ = 10 * (2 * ell_max + 1) * eps
+    n_theta = n_phi = 2 * ell_max + 1
+
+    rotors = quaternionic.array.from_spherical_coordinates(sf.theta_phi(n_theta, n_phi))
+
+    import warnings
+    warnings.warn("Limited s range")
+    for s in [0]:# range(-s_max, s_max + 1):
+        ell_min = abs(s)
+        a1 = np.random.rand(11, sf.Ysize(ell_min, ell_max)*2).view(complex)
+        a1[:, sf.Yindex(ell_min, -ell_min, ell_min):sf.Yindex(abs(s), -abs(s), ell_min)] = 0.0
+        m1 = sf.Modes(a1, spin_weight=s, ell_min=ell_min, ell_max=ell_max)
+        print(m1.shape, m1.ell_min)
+
+        fA = m1.grid(n_theta, n_phi, use_spinsfast=True)
+        fB = m1.grid(n_theta, n_phi, use_spinsfast=False)
+        assert np.allclose(fA.ndarray, fB.ndarray, rtol=ϵ, atol=ϵ), (
+            f"max|fA-fB|={np.max(np.abs(fA.ndarray-fB.ndarray))} > ϵ={ϵ}; s={s}"
+        )
+
+
 @slow
 def test_modes_grid(ell_max_slow, eps):
     ell_max = max(3, ell_max_slow)
@@ -676,11 +704,8 @@ def test_modes_grid(ell_max_slow, eps):
     rotors = quaternionic.array.from_spherical_coordinates(sf.theta_phi(n_theta, n_phi))
 
     for s in range(-2, 2 + 1):
-
         ell_min = abs(s)
-
-        a1 = np.random.rand(11, sf.LM_total_size(ell_min, ell_max)*2).view(complex)
-
+        a1 = np.random.rand(11, sf.Ysize(ell_min, ell_max)*2).view(complex)
         m1 = sf.Modes(a1, spin_weight=s, ell_min=ell_min, ell_max=ell_max)
 
         f1 = m1.grid(n_theta, n_phi)
