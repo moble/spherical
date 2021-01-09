@@ -15,7 +15,7 @@ slow = pytest.mark.slow
 precision_SWSH = 2.e-15
 
 
-def slow_Wignerd(iota, ell, m, s):
+def Wigner_d_NINJA(iota, ell, m, s):
     # Eq. II.8 of Ajith et al. (2007) 'Data formats...'
     k_min = max(0, m - s)
     k_max = min(ell + m, ell - s)
@@ -39,7 +39,7 @@ def slow_Wignerd(iota, ell, m, s):
     ])
 
 
-def slow_sYlm(s, ell, m, iota, phi):
+def sYlm_NINJA(s, ell, m, iota, phi):
     # Eq. II.7 of Ajith et al. (2007) 'Data formats...'
     # Note the weird definition w.r.t. `-s`
     if abs(s) > ell or abs(m) > ell:
@@ -47,7 +47,7 @@ def slow_sYlm(s, ell, m, iota, phi):
     return (
         (-1.) ** (-s)
         * math.sqrt((2 * ell + 1) / (4 * np.pi))
-        * slow_Wignerd(iota, ell, m, -s)
+        * Wigner_d_NINJA(iota, ell, m, -s)
         * cmath.exp(1j * m * phi)
     )
 
@@ -72,15 +72,15 @@ def test_NINJA_consistency(special_angles, ell_max):
 
     for iota in special_angles:
         for phi in special_angles:
-            assert abs(slow_sYlm(-2, 2, 2, iota, phi) - m2Y22(iota, phi)) < ell_max * precision_SWSH
-            assert abs(slow_sYlm(-2, 2, 1, iota, phi) - m2Y21(iota, phi)) < ell_max * precision_SWSH
-            assert abs(slow_sYlm(-2, 2, 0, iota, phi) - m2Y20(iota, phi)) < ell_max * precision_SWSH
-            assert abs(slow_sYlm(-2, 2, -1, iota, phi) - m2Y2m1(iota, phi)) < ell_max * precision_SWSH
-            assert abs(slow_sYlm(-2, 2, -2, iota, phi) - m2Y2m2(iota, phi)) < ell_max * precision_SWSH
+            assert abs(sYlm_NINJA(-2, 2, 2, iota, phi) - m2Y22(iota, phi)) < ell_max * precision_SWSH
+            assert abs(sYlm_NINJA(-2, 2, 1, iota, phi) - m2Y21(iota, phi)) < ell_max * precision_SWSH
+            assert abs(sYlm_NINJA(-2, 2, 0, iota, phi) - m2Y20(iota, phi)) < ell_max * precision_SWSH
+            assert abs(sYlm_NINJA(-2, 2, -1, iota, phi) - m2Y2m1(iota, phi)) < ell_max * precision_SWSH
+            assert abs(sYlm_NINJA(-2, 2, -2, iota, phi) - m2Y2m2(iota, phi)) < ell_max * precision_SWSH
 
 
 @slow
-def test_sYlm_NINJA_expressions(special_angles, ell_max_slow, eps):
+def test_sYlm_vs_NINJA(special_angles, ell_max_slow, eps):
     ϵ = 5 * ell_max_slow**6 * eps  # This is mostly due to the expressions above being inaccurate
     wigner = sf.Wigner(ell_max_slow)
     for iota in special_angles:
@@ -88,7 +88,7 @@ def test_sYlm_NINJA_expressions(special_angles, ell_max_slow, eps):
             R = quaternionic.array.from_euler_angles(phi, iota, 0)
             Y1 = np.array([
                 [
-                    slow_sYlm(s, ell, m, iota, phi)
+                    sYlm_NINJA(s, ell, m, iota, phi)
                     for ell in range(ell_max_slow + 1)
                     for m in range(-ell, ell + 1)
                 ]
