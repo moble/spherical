@@ -41,7 +41,7 @@ def truncate_ell(self, new_ell_max):
     return truncated
 
 
-def grid(self, n_theta=None, n_phi=None, **kwargs):
+def grid(self, n_theta=None, n_phi=None, use_spinsfast=True, **kwargs):
     """Return values of function on an equi-angular grid
 
     This method converts mode weights of spin-weighted function to values on a
@@ -66,19 +66,18 @@ def grid(self, n_theta=None, n_phi=None, **kwargs):
         Number of points to use in the phi direction.  Here, None is equivalent to
         n_phi=n_theta, after calculation of the default value for n_theta.  Note
         that the same comments apply about avoiding aliasing.
+    use_spinsfast : bool, optional
+        If True, and `spinsfast` is accessible, use it to evaluate the function
+        values; otherwise, use this module's `Wigner.evaluate` method.
     **kwargs : Any
         Additional keyword arguments are passed through to the Grid constructor on
         output
 
-    Notes
-    -----
-    If it is available, this method will use `spinsfast` to evaluate the function;
-    otherwise the `Wigner.evaluate` method from this module will be used.
-
     """
     import copy
     import numpy as np
-    from .. import Grid
+    import quaternionic
+    from .. import Grid, theta_phi
     n_theta = n_theta or 2*self.ell_max+1
     n_phi = n_phi or n_theta
     metadata = copy.copy(self._metadata)
@@ -86,16 +85,16 @@ def grid(self, n_theta=None, n_phi=None, **kwargs):
     metadata.update(**kwargs)
     try:
         import spinsfast
+    except ImportError:
+        use_spinsfast = False
+    if use_spinsfast:
         return Grid(
             spinsfast.salm2map(self.view(np.ndarray), self.spin_weight, self.ell_max, n_theta, n_phi),
             **metadata
         )
-    except ImportError:
-        import quaternionic
-        from .. import theta_phi
-        rotors = quaternionic.array.from_spherical_coordinates(theta_phi(n_theta, n_phi))
+    else:
         return Grid(
-            self.evaluate(rotors),
+            self.evaluate(quaternionic.array.from_spherical_coordinates(theta_phi(n_theta, n_phi))),
             **metadata
         )
 
