@@ -1,11 +1,11 @@
-# Copyright (c) 2020, Michael Boyle
+# Copyright (c) 2021, Michael Boyle
 # See LICENSE file for details: <https://github.com/moble/spherical/blob/master/LICENSE>
 
 import numpy as np
 from .. import jit
-from .complex_powers import complex_powers
-from .wigner3j import Wigner3jCalculator, Wigner3j, clebsch_gordan
-from .wignerH import HCalculator
+# from .complex_powers import complex_powers
+# from .wigner3j import Wigner3jCalculator, Wigner3j, clebsch_gordan
+# from .wignerH import HCalculator
 
 
 

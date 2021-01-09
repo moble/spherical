@@ -1,16 +1,32 @@
-# Copyright (c) 2020, Michael Boyle
+# Copyright (c) 2021, Michael Boyle
 # See LICENSE file for details: <https://github.com/moble/spherical/blob/master/LICENSE>
 
 import os
 import pytest
 import numpy as np
 import quaternionic
-from spherical import ell_max as ell_max_default
+
+ell_max_default = 36
+
+try:
+    import spinsfast
+    requires_spinsfast = lambda f: f
+except:
+    requires_spinsfast = pytest.mark.skipif(True, reason="spinsfast is missing")
+
+try:
+    import sympy
+    requires_sympy = lambda f: f
+except:
+    requires_sympy = pytest.mark.skipif(True, reason="sympy is missing")
+
 
 
 def pytest_addoption(parser):
     parser.addoption("--ell_max", action="store", type=int, default=ell_max_default,
                      help="Maximum ell value to test")
+    parser.addoption("--ell_max_slow", action="store", type=int, default=ell_max_default // 2,
+                     help="Maximum ell value to test with slow tests")
     parser.addoption("--run_slow_tests", action="store_true", default=False,
                      help="Run all tests, including slow ones")
 
@@ -36,6 +52,11 @@ def pytest_runtest_setup(item):
 @pytest.fixture
 def ell_max(request):
     return request.config.getoption("--ell_max")
+
+
+@pytest.fixture
+def ell_max_slow(request):
+    return request.config.getoption("--ell_max_slow")
 
 
 @pytest.fixture

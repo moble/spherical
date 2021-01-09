@@ -1,18 +1,11 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2020, Michael Boyle
+# Copyright (c) 2021, Michael Boyle
 # See LICENSE file for details: <https://github.com/moble/spherical/blob/master/LICENSE>
 
-import math
-import cmath
 import numpy as np
-import spherical as sf
-import pytest
 
-slow = pytest.mark.slow
-eps = np.finfo(float).eps
-
-def test_complex_powers():
+def test_complex_powers(eps):
     from spherical import complex_powers
     M = 10_000
     np.random.seed(12345)

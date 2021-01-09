@@ -1,15 +1,21 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2020, Michael Boyle
+# Copyright (c) 2021, Michael Boyle
 # See LICENSE file for details: <https://github.com/moble/spherical/blob/master/LICENSE>
 
 import math
 import cmath
 import pickle
 import copy
+
 import numpy as np
+import quaternionic
 import spherical as sf
 import pytest
+
+from .conftest import requires_spinsfast
+
+slow = pytest.mark.slow
 
 
 def test_modes_creation():
@@ -117,7 +123,7 @@ def test_modes_copying_and_pickling(copier):
         assert c.ell_max == m.ell_max
 
 
-@pytest.mark.xfail
+@requires_spinsfast
 def test_modes_grid():
     for s in range(-2, 2 + 1):
         ell_min = abs(s)
@@ -136,7 +142,7 @@ def test_modes_grid():
             assert g.shape[-2:] == (n_theta, n_phi)
 
 
-@pytest.mark.xfail
+@requires_spinsfast
 def test_modes_addition():
     tolerance = 1e-14
     np.random.seed(1234)
@@ -193,7 +199,7 @@ def test_modes_addition():
                     assert np.allclose(g1+g2, g12, rtol=tolerance, atol=tolerance)
 
 
-@pytest.mark.xfail
+@requires_spinsfast
 def test_modes_subtraction():
     tolerance = 1e-14
     np.random.seed(1234)
@@ -257,7 +263,7 @@ def test_modes_subtraction():
                 assert np.allclose(g1-g2, g12, rtol=tolerance, atol=tolerance)
 
 
-@pytest.mark.xfail
+@requires_spinsfast
 def test_modes_multiplication():
     tolerance = 1e-13
     np.random.seed(1234)
@@ -321,7 +327,7 @@ def test_modes_multiplication():
                     assert np.allclose(g1*g2, g12, rtol=tolerance, atol=tolerance)
 
 
-@pytest.mark.xfail
+@requires_spinsfast
 def test_modes_conjugate():
     tolerance = 1e-15
     np.random.seed(1234)
@@ -345,7 +351,7 @@ def test_modes_conjugate():
             assert np.allclose(g, np.conjugate(gbar), rtol=tolerance, atol=tolerance)
 
 
-@pytest.mark.xfail
+@requires_spinsfast
 def test_modes_real():
     tolerance = 1e-14
     np.random.seed(1234)
@@ -377,7 +383,7 @@ def test_modes_real():
                 mreal = m._real_func(inplace)
 
 
-@pytest.mark.xfail
+@requires_spinsfast
 def test_modes_imag():
     tolerance = 1e-14
     np.random.seed(1234)
@@ -498,7 +504,7 @@ def test_modes_derivative_commutators():
         assert np.allclose(ethbar(eth(m)) - eth(ethbar(m)), 2 * m.s * m, rtol=tolerance, atol=tolerance)
 
 
-@pytest.mark.xfail
+@requires_spinsfast
 def test_modes_derivatives_on_grids():
     # Test various SWSH-derivative expressions on grids
     tolerance = 2e-14
@@ -652,8 +658,57 @@ def test_modes_ufuncs():
         assert np.array_equal(m1.view(np.ndarray), positivem1.view(np.ndarray))
         negativem1 = -m1
         assert np.array_equal(-(m1.view(np.ndarray)), negativem1.view(np.ndarray))
-        # for s2 in range(-2, 2 + 1):
-        #     ell_min2 = abs(s2)
-        #     ell_max2 = 8
-        #     a2 = np.random.rand(3, 7, sf.LM_total_size(ell_min2, ell_max2)*2).view(complex)
-        #     m2 = sf.Modes(a2, spin_weight=s2, ell_min=ell_min2, ell_max=ell_max2)
+
+
+@requires_spinsfast
+@slow
+def test_modes_grid_variants(ell_max_slow, eps):
+    ell_max = max(3, ell_max_slow)
+    s_max = 2
+    np.random.seed(1234)
+    ϵ = 10 * (2 * ell_max + 1) * eps
+    n_theta = n_phi = 2 * ell_max + 1
+
+    rotors = quaternionic.array.from_spherical_coordinates(sf.theta_phi(n_theta, n_phi))
+
+    for s in range(-s_max, s_max + 1):
+        ell_min = abs(s)
+        a1 = np.random.rand(2, sf.Ysize(ell_min, ell_max)*2).view(complex)
+        m1 = sf.Modes(a1, spin_weight=s, ell_min=ell_min, ell_max=ell_max)
+
+        fA = m1.grid(n_theta, n_phi, use_spinsfast=True)
+        fB = m1.grid(n_theta, n_phi, use_spinsfast=False)
+        assert np.allclose(fA.ndarray, fB.ndarray, rtol=ϵ, atol=ϵ), (
+            f"fA = np.array({fA.ndarray.tolist()})\n\n"
+            f"fB = np.array({fB.ndarray.tolist()})\n\n"
+            "\n"
+            f"max|fA-fB|={np.max(np.abs(fA.ndarray-fB.ndarray))} > ϵ={ϵ}; s={s}"
+        )
+
+
+@slow
+def test_modes_grid(ell_max_slow, eps):
+    ell_max = max(3, ell_max_slow)
+    np.random.seed(1234)
+    wigner = sf.Wigner(ell_max)
+    ϵ = 10 * (2 * ell_max + 1) * eps
+    n_theta = n_phi = 2 * ell_max + 1
+
+    rotors = quaternionic.array.from_spherical_coordinates(sf.theta_phi(n_theta, n_phi))
+
+    for s in range(-2, 2 + 1):
+        ell_min = abs(s)
+        a1 = np.random.rand(11, sf.Ysize(ell_min, ell_max)*2).view(complex)
+        m1 = sf.Modes(a1, spin_weight=s, ell_min=ell_min, ell_max=ell_max)
+
+        f1 = m1.grid(n_theta, n_phi)
+        assert f1.shape == m1.shape[:-1] + rotors.shape[:-1]
+
+        sYlm = np.zeros((sf.Ysize(0, ell_max),) + rotors.shape[:-1], dtype=complex)
+        for i, Rs in enumerate(rotors):
+            for j, R in enumerate(Rs):
+                wigner.sYlm(s, R, out=sYlm[:, i, j])
+        f2 = np.tensordot(m1.view(np.ndarray), sYlm, axes=([-1], [0]))
+        assert f2.shape == m1.shape[:-1] + rotors.shape[:-1]
+
+        assert np.allclose(f1.ndarray, f2, rtol=ϵ, atol=ϵ), f"max|f1-f2|={np.max(np.abs(f1.ndarray-f2))} > ϵ={ϵ}"

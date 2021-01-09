@@ -1,16 +1,20 @@
-# Copyright (c) 2020, Michael Boyle
-# See LICENSE file for details: <https://github.com/moble/waveforms/blob/master/LICENSE>
+#!/usr/bin/env python
+
+# Copyright (c) 2021, Michael Boyle
+# See LICENSE file for details: <https://github.com/moble/spherical/blob/master/LICENSE>
 
 import platform
 import numpy as np
-from numpy import *
 import pytest
+import quaternionic
 import spherical as sf
+
+from .conftest import requires_spinsfast
 
 
 @pytest.mark.parametrize("eth, spin_weight_of_eth", [(sf.eth_NP, 1), (sf.eth_GHP, 1),
                                                      (sf.ethbar_NP, -1), (sf.ethbar_GHP, -1)])
-@pytest.mark.skipif(platform.system() != "Linux", reason="FFTW is missing")
+@requires_spinsfast
 def test_eth_derivation(eth, spin_weight_of_eth):
     """Ensure that the various `eth` operators are derivations -- i.e., they obey the Leibniz product law
 
@@ -18,17 +22,21 @@ def test_eth_derivation(eth, spin_weight_of_eth):
 
         eth(f * g) = eth(f) * g + f * eth(g)
 
-    This test generates a set of random modes with equal power for `f` and `g` (though more realistic functions can
-    be expected to have exponentially decaying mode amplitudes).  Because of the large power in high-ell modes,
-    we need to double the number of modes in the representation of their product, which is why we use
+    This test generates a set of random modes with equal power for `f` and `g`
+    (though more realistic functions can be expected to have exponentially decaying
+    mode amplitudes).  Because of the large power in high-ell modes, we need to
+    double the number of modes in the representation of their product, which is why
+    we use
 
         n_theta = n_phi = 4 * ell_max + 1
 
-    These `f` and `g` functions must be transformed to the physical-space representation, multiplied there,
-    the product transformed back to spectral space, the eth operator evaluated, and then transformed back again to
-    physical space for comparison.
+    These `f` and `g` functions must be transformed to the physical-space
+    representation, multiplied there, the product transformed back to spectral
+    space, the eth operator evaluated, and then transformed back again to physical
+    space for comparison.
 
-    We test both the Newman-Penrose and Geroch-Held-Penrose versions of eth, as well as their conjugates.
+    We test both the Newman-Penrose and Geroch-Held-Penrose versions of eth, as
+    well as their conjugates.
 
     """
     import spinsfast

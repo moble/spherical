@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Michael Boyle
+# Copyright (c) 2021, Michael Boyle
 # See LICENSE file for details: <https://github.com/moble/spherical/blob/master/LICENSE>
 
 ### NOTE: The functions in this file are intended purely for inclusion in the Grid class.  In
@@ -16,7 +16,7 @@ def conjugate(self, inplace=False):
 
     """
     s = self.view(np.ndarray)
-    c = s if inplace else np.empty_like(s)
+    c = s if inplace else np.zeros_like(s)
     np.conjugate(s, out=c)
     if inplace:
         self._metadata['spin_weight'] = -self.spin_weight

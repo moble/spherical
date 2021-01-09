@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "spherical"
-version = "0.1.4"
+version = "1.0.0"
 description = "Evaluate and transform D matrices, 3-j symbols, and (scalar or spin-weighted) spherical harmonics"
 readme = "README.md"
 license = "MIT"
@@ -19,11 +19,11 @@ black = {version = ">=20.8b1", optional = true, markers = "implementation_name =
 mktheapidocs = {version = ">=0.2", optional = true, markers = "implementation_name == 'cpython'"}
 pymdown-extensions = {version = "^8", optional = true, markers = "implementation_name == 'cpython'"}
 quaternionic = "^0.2.0"
+spinsfast = {version = "^104.2020.8", markers = "sys_platform != 'win32'"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.0"
 pytest-cov = ">=2.10.1"
-spinsfast = {version = "^104.2020.8", markers = "sys_platform != 'win32'"}
 sympy = "^1.6.2"
 line_profiler = {version = "^3.0.2", markers = "sys_platform != 'win32'"}
 ipython = "<7.17"

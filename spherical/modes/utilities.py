@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Michael Boyle
+# Copyright (c) 2021, Michael Boyle
 # See LICENSE file for details: <https://github.com/moble/spherical/blob/master/LICENSE>
 
 ### NOTE: The functions in this file are intended purely for inclusion in the Modes class.  In
@@ -41,13 +41,13 @@ def truncate_ell(self, new_ell_max):
     return truncated
 
 
-def grid(self, n_theta=None, n_phi=None, **kwargs):
+def grid(self, n_theta=None, n_phi=None, use_spinsfast=True, **kwargs):
     """Return values of function on an equi-angular grid
 
-    This method uses `spinsfast` to convert mode weights of spin-weighted function
-    to values on a grid.  The grid has `n_theta` evenly spaced points along the
-    usual polar (colatitude) angle theta, and `n_phi` evenly spaced points along
-    the usual azimuthal angle phi.  This grid corresponds to the one produced by
+    This method converts mode weights of spin-weighted function to values on a
+    grid.  The grid has `n_theta` evenly spaced points along the usual polar
+    (colatitude) angle theta, and `n_phi` evenly spaced points along the usual
+    azimuthal angle phi.  This grid corresponds to the one produced by
     `spherical.theta_phi`; see that function for specifics.
 
     The output array has one more dimension than this object; rather than the last
@@ -66,34 +66,51 @@ def grid(self, n_theta=None, n_phi=None, **kwargs):
         Number of points to use in the phi direction.  Here, None is equivalent to
         n_phi=n_theta, after calculation of the default value for n_theta.  Note
         that the same comments apply about avoiding aliasing.
+    use_spinsfast : bool, optional
+        If True, and `spinsfast` is accessible, use it to evaluate the function
+        values; otherwise, use this module's `Wigner.evaluate` method.
     **kwargs : Any
         Additional keyword arguments are passed through to the Grid constructor on
         output
 
     """
-    raise NotImplementedError()
-    # import copy
-    # import numpy as np
-    # import spinsfast
-    # from .. import Grid
-    # n_theta = n_theta or 2*self.ell_max+1
-    # n_phi = n_phi or n_theta
-    # metadata = copy.copy(self._metadata)
-    # metadata.pop('ell_max', None)
-    # metadata.update(**kwargs)
-    # return Grid(spinsfast.salm2map(self.view(np.ndarray), self.spin_weight, self.ell_max, n_theta, n_phi), **metadata)
+    import copy
+    import numpy as np
+    import quaternionic
+    from .. import Grid, theta_phi
+    n_theta = n_theta or 2*self.ell_max+1
+    n_phi = n_phi or n_theta
+    metadata = copy.copy(self._metadata)
+    metadata.pop('ell_max', None)
+    metadata.update(**kwargs)
+    try:
+        import spinsfast
+    except ImportError:
+        use_spinsfast = False
+    if use_spinsfast:
+        return Grid(
+            spinsfast.salm2map(self.view(np.ndarray), self.spin_weight, self.ell_max, n_theta, n_phi),
+            **metadata
+        )
+    else:
+        return Grid(
+            self.evaluate(quaternionic.array.from_spherical_coordinates(theta_phi(n_theta, n_phi))),
+            **metadata
+        )
 
 
 def evaluate(self, rotors, **kwargs):
     """Return values of function on input rotors"""
-    import numpy as np
-    import spherical as sf
-    SWSHs = sf.SWSH_grid(rotors, self.spin_weight, self.ell_max)
-    return np.tensordot(
-        self.view(np.ndarray),
-        SWSHs[..., sf.LM_index(self.ell_min, -self.ell_min, 0):sf.LM_index(self.ell_max, self.ell_max, 0)+1],
-        axes=([-1], [-1])
-    )
+    from .. import Wigner
+    wigner = Wigner(self.ell_max, ell_min=self.ell_min, mp_max=abs(self.spin_weight))
+    return wigner.evaluate(self, rotors)
+
+
+def rotate(self, R, **kwargs):
+    """Return values of function on input rotors"""
+    from .. import Wigner
+    wigner = Wigner(self.ell_max, self.ell_min, mp_max=self.ell_max)
+    return wigner.rotate(self, R)
 
 
 def _check_broadcasting(self, array, reverse=False):
