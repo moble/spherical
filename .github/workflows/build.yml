@@ -33,7 +33,7 @@ jobs:
           rm poetry.lock
           python -m poetry build
           python -m poetry install
-          python -m poetry run pytest --ell_max_slow=6 --run_slow_tests
+          python -m poetry run pytest --ell_max_slow=5 --run_slow_tests
 
       - name: Upload coverage
         if: "matrix.python-version == 3.8 && matrix.os == 'ubuntu-latest'"

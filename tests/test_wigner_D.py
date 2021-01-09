@@ -297,7 +297,9 @@ def test_Wigner_D_vs_sympy(special_angles, ell_max_slow, eps):
     from sympy import S, N
     from sympy.physics.quantum.spin import WignerD as Wigner_D_sympy
 
-    ell_max = ell_max_slow
+    # Note that this does not fully respect ell_max_slow because
+    # this test is extraordinarily slow
+    ell_max = min(4, ell_max_slow)
     ϵ = 2 * ell_max * eps
 
     wigner = sf.Wigner(ell_max)
@@ -320,7 +322,7 @@ def test_Wigner_D_vs_sympy(special_angles, ell_max_slow, eps):
                 for ell in range(wigner.ell_max+1):
                     for mp in range(-ell, ell+1):
                         for m in range(-ell, ell+1):
-                            sympyD = N(Wigner_D_sympy(ell, mp, m, S(f"{α}"), S(f"{β}"), S(f"{γ}")).doit(), n=24).conjugate()
+                            sympyD = N(Wigner_D_sympy(ell, mp, m, α, β, γ).doit(), n=24).conjugate()
                             sphericalD = 𝔇[wigner.Dindex(ell, mp, m)]
                             error = float(abs(sympyD-sphericalD))
                             assert error < ϵ, (
@@ -328,4 +330,4 @@ def test_Wigner_D_vs_sympy(special_angles, ell_max_slow, eps):
                                 f"sympy:{sympyD}, spherical:{sphericalD}, error={error}"
                             )
                             max_error = max(error, max_error)
-    print(f"max_error={max_error} after checking {(len(special_angles)**3)*wigner.Dsize} values")
+    print(f"\tmax_error={max_error} after checking {(len(special_angles)**3)*wigner.Dsize} values")
