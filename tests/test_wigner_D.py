@@ -238,34 +238,47 @@ def test_Wigner_D_non_overflow(ell_max):
     assert np.all(np.isfinite(wigner.D(R, out=D)))
 
 
-def slow_Wignerd(beta, ell, mp, m):
+def Wigner_d_Wikipedia(beta, ell, mp, m):
     # https://en.wikipedia.org/wiki/Wigner_D-matrix#Wigner_.28small.29_d-matrix
     Prefactor = math.sqrt(
-        math.factorial(ell + mp) * math.factorial(ell - mp) * math.factorial(ell + m) * math.factorial(ell - m))
+        math.factorial(ell + mp)
+        * math.factorial(ell - mp)
+        * math.factorial(ell + m)
+        * math.factorial(ell - m)
+    )
     s_min = int(round(max(0, round(m - mp))))
     s_max = int(round(min(round(ell + m), round(ell - mp))))
     assert isinstance(s_max, int), type(s_max)
     assert isinstance(s_min, int), type(s_min)
-    return Prefactor * sum([((-1.) ** (mp - m + s)
-                             * math.cos(beta / 2.) ** (2 * ell + m - mp - 2 * s)
-                             * math.sin(beta / 2.) ** (mp - m + 2 * s)
-                             / float(math.factorial(ell + m - s) * math.factorial(s) * math.factorial(mp - m + s)
-                                     * math.factorial(ell - mp - s)))
-                            for s in range(s_min, s_max + 1)])
+    return Prefactor * sum([
+        (
+            (-1.) ** (mp - m + s)
+            * math.cos(beta / 2.) ** (2 * ell + m - mp - 2 * s)
+            * math.sin(beta / 2.) ** (mp - m + 2 * s)
+            / float(
+                math.factorial(ell + m - s)
+                * math.factorial(s)
+                * math.factorial(mp - m + s)
+                * math.factorial(ell - mp - s)
+            )
+        )
+        for s in range(s_min, s_max + 1)
+    ])
 
 
-def slow_Wigner_D_element(alpha, beta, gamma, ell, mp, m):
+def Wigner_D_Wikipedia(alpha, beta, gamma, ell, mp, m):
     # https://en.wikipedia.org/wiki/Wigner_D-matrix#Definition_of_the_Wigner_D-matrix
-    return cmath.exp(-1j * mp * alpha) * slow_Wignerd(beta, ell, mp, m) * cmath.exp(-1j * m * gamma)
+    return cmath.exp(-1j * mp * alpha) * Wigner_d_Wikipedia(beta, ell, mp, m) * cmath.exp(-1j * m * gamma)
 
 
 @slow
-def test_Wigner_D_values(special_angles, ell_max, eps):
-    ell_max = 6
+def test_Wigner_D_vs_Wikipedia(special_angles, ell_max_slow, eps):
+    ell_max = ell_max_slow
+    ϵ = 5 * ell_max**6 * eps
+
     D = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
     wigner = sf.Wigner(ell_max)
     ell_mp_m = sf.WignerDrange(0, ell_max)
-    ϵ = 5 * ell_max**6 * eps
 
     print("")
     for alpha in special_angles:
@@ -273,18 +286,20 @@ def test_Wigner_D_values(special_angles, ell_max, eps):
         for beta in special_angles:
             print("\t\tbeta={0}".format(beta))
             for gamma in special_angles:
-                a = np.conjugate(np.array([slow_Wigner_D_element(alpha, beta, gamma, ell, mp, m) for ell,mp,m in ell_mp_m]))
+                a = np.conjugate(np.array([Wigner_D_Wikipedia(alpha, beta, gamma, ell, mp, m) for ell,mp,m in ell_mp_m]))
                 b = wigner.D(quaternionic.array.from_euler_angles(alpha, beta, gamma), out=D)
                 assert np.allclose(a, b, rtol=ϵ, atol=ϵ)
 
 
 @slow
 @requires_sympy
-def test_Wigner_D_sympy(special_angles, eps):
+def test_Wigner_D_vs_sympy(special_angles, ell_max_slow, eps):
     from sympy import S, N
-    from sympy.physics.quantum.spin import WignerD as sympyWignerD
+    from sympy.physics.quantum.spin import WignerD as Wigner_D_sympy
 
-    ell_max = 4
+    ell_max = ell_max_slow
+    ϵ = 2 * ell_max * eps
+
     wigner = sf.Wigner(ell_max)
     max_error = 0.0
 
@@ -297,7 +312,7 @@ def test_Wigner_D_sympy(special_angles, eps):
     for α in a:
         for β in b:
             for γ in c:
-                R = quaternionic.array.from_euler_angles(float(α), float(β), float(γ))
+                R = quaternionic.array.from_euler_angles(α, β, γ)
                 𝔇 = wigner.D(R)
 
                 k += 1
@@ -305,12 +320,10 @@ def test_Wigner_D_sympy(special_angles, eps):
                 for ell in range(wigner.ell_max+1):
                     for mp in range(-ell, ell+1):
                         for m in range(-ell, ell+1):
-                            # j += 1
-                            # print(f"\t\tIteration {j} of {(len(special_angles)**3)*wigner.Dsize+1}")
-                            sympyD = N(sympyWignerD(ell, mp, m, α, β, γ).doit(), n=24).conjugate()
+                            sympyD = N(Wigner_D_sympy(ell, mp, m, S(f"{α}"), S(f"{β}"), S(f"{γ}")).doit(), n=24).conjugate()
                             sphericalD = 𝔇[wigner.Dindex(ell, mp, m)]
                             error = float(abs(sympyD-sphericalD))
-                            assert error < 2 * ell_max * eps, (
+                            assert error < ϵ, (
                                 f"Testing Wigner d recursion: ell={ell}, m'={mp}, m={m}, "
                                 f"sympy:{sympyD}, spherical:{sphericalD}, error={error}"
                             )
