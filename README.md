@@ -13,6 +13,11 @@ These functions are evaluated directly in terms of quaternions, as well as in
 the more standard forms of spherical coordinates and Euler
 angles.<sup>[1](#1-euler-angles-are-awful)</sup>
 
+These quantities are computed using recursion relations, which makes it
+possible to compute to very high ℓ values.  Unlike direct evaluation of
+individual elements, which will generally cause overflow or underflow beyond
+ℓ≈30, these recursion relations should be accurate for ℓ values beyond 1000.
+
 The conventions for this package are described in detail on
 [this page](http://moble.github.io/spherical/).
 
@@ -37,59 +42,97 @@ Either of these will download and install the package.
 
 ## Usage
 
-First, we show a very simple example of usage with Euler angles, though it
-breaks my heart to do so:<sup>[1](#euler-angles-are-awful)</sup>
+#### Functions of angles or rotations
+
+Currently, due to the nature of recursions, this module does not allow
+calculation of individual elements, but returns ranges of results.  For
+example, when computing Wigner's 𝔇 matrix, all matrices up to a given ℓ will be
+returned; when evaluating a spin-weighted spherical harmonic, all harmonics up
+to a given ℓ will be returned.  Fortunately, this is usually what is required
+in any case.
+
+To calculate Wigner's d or 𝔇 matrix or spin-weighted spherical harmonics, first
+construct a `Wigner` object.
 
 ```python
->>> import spherical as sf
->>> alpha, beta, gamma = 0.1, 0.2, 0.3
->>> ell,mp,m = 3,2,1
->>> sf.Wigner_D_element(alpha, beta, gamma, ell, mp, m)
-
+import quaternionic
+import spherical
+ell_max = 16  # Use the largest ℓ value you expect to need
+wigner = spherical.Wigner(ell_max)
 ```
 
-Of course, it's always better to use unit quaternions to describe rotations:
+This module takes input as quaternions.  The `quaternionic` module has [various
+ways of constructing
+quaternions](https://quaternionic.readthedocs.io/en/latest/#rotations),
+including direct construction or conversion from rotation matrices, axis-angle
+representation, Euler angles,<sup>[1](#euler-angles-are-awful)</sup> or
+spherical coordinates, among others:
 
 ```python
->>> import numpy as np
->>> import quaternionic
->>> R = quaternionic.array(1,2,3,4).normalized
->>> ell,mp,m = 3,2,1
->>> sf.Wigner_D_element(R, ell, mp, m)
-
+R = quaternionic.array([1, 2, 3, 4]).normalized
+R = quaternionic.array.from_axis_angle(vec)
+R = quaternionic.array.from_euler_angles(alpha, beta, gamma)
+R = quaternionic.array.from_spherical_coordinates(theta, phi)
 ```
 
-If you need to calculate values of the 𝔇<sup>(ℓ)</sup> matrix elements for many
-values of (ℓ, m', m), it is more efficient to do so all at once.  The following
-calculates all modes for ℓ from 2 to 8 (inclusive):
+Mode weights can be rotated as
 
 ```python
->>> indices = np.array([[ell,mp,m] for ell in range(2,9)
-... for mp in range(-ell, ell+1) for m in range(-ell, ell+1)])
->>> sf.Wigner_D_element(R, indices)
-
+wigner.rotate(modes, R)
 ```
 
-Finally, if you really need to put the pedal to the metal, and are willing to
-guarantee that the input arguments are correct, you can use a special hidden
-form of the function:
+or evaluated as
 
 ```python
->>> sf._Wigner_D_element(R.a, R.b, indices, elements)
-
+wigner.evaluate(modes, R)
 ```
 
-Here, `R.a` and `R.b` are the two complex parts of the quaternion defined on
-[this page](http://moble.github.io/spherical/) (though the user need
-not care about that).  The `indices` variable is assumed to be a
-two-dimensional array of integers, where the second dimension has size three,
-representing the (ℓ, m', m) indices.  This avoids certain somewhat slower
-pure-python operations involving argument checking, reshaping, etc.  The
-`elements` variable must be a one-dimensional array of complex numbers (can be
-uninitialized), which will be replaced with the corresponding values on return.
-Again, however, there is no input dimension checking here, so if you give bad
-inputs, behavior could range from silently wrong to exceptions to segmentation
-faults.  Caveat emptor.
+We can compute the 𝔇 matrix as
+
+```python
+D = wigner.D(R)
+```
+
+which can be indexed as
+
+```python
+D[wigner.Dindex(ell, mp, m)]
+```
+
+or we can compute the spin-weighted spherical harmonics as
+
+```python
+Y = wigner.sYlm(s, R)
+```
+
+which can be indexed as
+
+```python
+Y[wigner.Yindex(ell, m)]
+```
+
+Note that, if relevant, it is probably more efficient to use the `rotate` and
+`evaluate` methods than to use `D` or `Y`.
+
+
+
+#### Clebsch-Gordan and 3-j symbols
+
+It is possible to compute individual values of the 3-j or Clebsch-Gordan
+symbols:
+
+```python
+w3j = spherical.Wigner3j(j_1, j_2, j_3, m_1, m_2, m_3)
+cg = spherical.clebsch_gordan(j_1, m_1, j_2, m_2, j_3, m_3)
+```
+
+However, when more than one element is needed (as is typically the case), it is
+much more efficient to compute a range of values:
+
+```python
+calc3j = spherical.Wigner3jCalculator(j2_max, j3_max)
+w3j = calc3j.calculate(j2, j3, m2, m3)
+```
 
 
 ## Acknowledgments
