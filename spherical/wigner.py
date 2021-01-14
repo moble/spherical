@@ -763,7 +763,7 @@ def _fill_sYlm(ell_min, ell_max, mp_max, s, Y, Hwedge, zₐpowers, zᵧpower):
 
 
 @jit
-def _rotate(fₗₙ, fₗₘ, ell_min_w, ell_max_w, mp_max_w, ell_min_m, ell_max_m, spin_weight_m, 𝔇):
+def _rotate(fₗₘ, fₗₙ, ell_min_w, ell_max_w, mp_max_w, ell_min_m, ell_max_m, spin_weight_m, 𝔇):
     """Helper function for Wigner.rotate"""
     for ell in range(max(abs(spin_weight_m), ell_min_m), ell_max_m+1):
         i1 = Yindex(ell, -ell, ell_min_m)
