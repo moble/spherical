@@ -37,7 +37,9 @@ def test_Wigner_D_negative_argument(Rs, ell_max, eps):
 def test_Wigner_D_representation_property(Rs, ell_max_slow, eps):
     # Test the representation property for special and random angles
     # For each l, 𝔇ˡₘₚ,ₘ(R1 * R2) = Σₘₚₚ 𝔇ˡₘₚ,ₘₚₚ(R1) * 𝔇ˡₘₚₚ,ₘ(R2)
+    import time
     print("")
+    t1 = time.perf_counter()
     D1 = np.zeros(sf.WignerDsize(0, ell_max_slow), dtype=complex)
     D2 = np.zeros(sf.WignerDsize(0, ell_max_slow), dtype=complex)
     D12 = np.zeros(sf.WignerDsize(0, ell_max_slow), dtype=complex)
@@ -60,6 +62,8 @@ def test_Wigner_D_representation_property(Rs, ell_max_slow, eps):
                 Dˡ12 = D12[i1:i2+1].reshape(shape)
                 assert np.allclose(Dˡ1 @ Dˡ2, Dˡ12, rtol=ϵ, atol=ϵ), ell
                 # assert np.allclose(Dˡ1 @ Dˡ2, Dˡ12, atol=ell_max_slow * precision_Wigner_D_element), ell
+    t2 = time.perf_counter()
+    print(f"\tFinished in {t2-t1:.4f} seconds.")
 
 
 def test_Wigner_D_inverse_property(Rs, ell_max, eps):
