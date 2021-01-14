@@ -108,7 +108,7 @@ def _step_1(Hwedge):
 
 
 @jit
-def _step_2(g, h, n_max, mp_max, Hwedge, Hextra, Hv, cosβ, sinβ):
+def _step_2(g, h, n_max, mp_max, Hwedge, Hextra, Hv, expiβ):
     """Compute values H^{0,m}_{n}(β)for m=0,...,n and H^{0,m}_{n+1}(β) for m=0,...,n+1 using Eq. (32):
 
         H^{0,m}_{n}(β) = (-1)^m √((n-|m|)! / (n+|m|)!) P^{|m|}_{n}(cos β)
@@ -125,6 +125,8 @@ def _step_2(g, h, n_max, mp_max, Hwedge, Hextra, Hv, cosβ, sinβ):
     from its symmetric equivalent H^{0, 1}_{n} in this step.
 
     """
+    cosβ = expiβ.real
+    sinβ = expiβ.imag
     if n_max > 0:
         # n = 1
         n0n_index = WignerHindex(1, 0, 1, mp_max)
@@ -180,7 +182,7 @@ def _step_2(g, h, n_max, mp_max, Hwedge, Hextra, Hv, cosβ, sinβ):
 
 
 @jit
-def _step_3(a, b, n_max, mp_max, Hwedge, Hextra, cosβ, sinβ):
+def _step_3(a, b, n_max, mp_max, Hwedge, Hextra, expiβ):
     """Use relation (41) to compute H^{1,m}_{n}(β) for m=1,...,n.  Using symmetry and shift
     of the indices this relation can be written as
 
@@ -189,6 +191,8 @@ def _step_3(a, b, n_max, mp_max, Hwedge, Hextra, cosβ, sinβ):
                                    − a^{m}_{n} sinβ H^{0, m}_{n+1}
 
     """
+    cosβ = expiβ.real
+    sinβ = expiβ.imag
     if n_max > 0 and mp_max > 0:
         for n in range(1, n_max+1):
             # m = 1, ..., n

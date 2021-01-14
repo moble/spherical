@@ -4,11 +4,14 @@
 import numpy as np
 import quaternionic
 
-from . import jit, complex_powers, WignerHsize, WignerHindex, WignerDsize, WignerDindex, Ysize, Yindex
+from . import jit, WignerHsize, WignerHindex, WignerDsize, WignerDindex, Ysize, Yindex
 from .recursions.wignerH import ϵ, _step_1, _step_2, _step_3, _step_4, _step_5
+from .recursions.complex_powers import _complex_powers
 from .utilities.indexing import _WignerHindex
 
 inverse_4pi = 1.0 / (4 * np.pi)
+
+to_euler_phases = quaternionic.converters.ToEulerPhases(jit)
 
 
 def wigner_d(expiβ, ell_min, ell_max, out=None, workspace=None):
@@ -53,7 +56,8 @@ class Wigner:
         self._Dsize = WignerDsize(self.ell_min, self.mp_max, self.ell_max)
         self._Ysize = Ysize(self.ell_min, self.ell_max)
 
-        self.workspace = self.new_workspace()
+        workspace = self.new_workspace()
+        self.Hwedge, self.Hv, self.Hextra, self.zₐpowers, self.zᵧpowers, self.z = self._split_workspace(workspace)
 
         n = np.array([n for n in range(self.ell_max+2) for m in range(-n, n+1)])
         m = np.array([m for n in range(self.ell_max+2) for m in range(-n, n+1)])
@@ -76,21 +80,38 @@ class Wigner:
 
     def new_workspace(self):
         """Return a new empty array providing workspace for calculating H"""
-        return np.zeros(self.Hsize + (self.ell_max+1)**2 + self.ell_max+2, dtype=float)
+        return np.zeros(
+            self.Hsize
+            + (self.ell_max+1)**2
+            + self.ell_max+2
+            + 2*(self.ell_max+1)
+            + 2*(self.ell_max+1)
+            + 2*3,
+            dtype=float
+        )
 
     def _split_workspace(self, workspace):
         size1 = self.Hsize
         size2 = (self.ell_max+1)**2
         size3 = self.ell_max+2
+        size4 = 2*(self.ell_max+1)
+        size5 = 2*(self.ell_max+1)
+        size6 = 2*3
         i1 = size1
         i2 = i1 + size2
         i3 = i2 + size3
-        if workspace.size < i3:
-            raise ValueError(f"Input workspace has size {workspace.size}, but {i3} is needed")
+        i4 = i3 + size4
+        i5 = i4 + size5
+        i6 = i5 + size6
+        if workspace.size < i6:
+            raise ValueError(f"Input workspace has size {workspace.size}, but {i6} is needed")
         Hwedge = workspace[:i1]
         Hv = workspace[i1:i2]
         Hextra = workspace[i2:i3]
-        return Hwedge, Hv, Hextra
+        zₐpowers = workspace[i3:i4].view(complex)[np.newaxis]
+        zᵧpowers = workspace[i4:i5].view(complex)[np.newaxis]
+        z = workspace[i5:i6].view(complex)
+        return Hwedge, Hv, Hextra, zₐpowers, zᵧpowers, z
 
     @property
     def Hsize(self):
@@ -272,7 +293,7 @@ class Wigner:
         """
         return Yindex(self.ell_min, ell, m)
 
-    def H(self, expiβ, workspace=None):
+    def H(self, expiβ, Hwedge, Hv, Hextra):
         """Compute a quarter of the H matrix
 
         WARNING: The returned array will be a view into the `workspace` variable (see
@@ -327,11 +348,9 @@ class Wigner:
         elements.
 
         """
-        workspace = workspace if workspace is not None else self.workspace
-        Hwedge, Hv, Hextra = self._split_workspace(workspace)
         _step_1(Hwedge)
-        _step_2(self.g, self.h, self.ell_max, self.mp_max, Hwedge, Hextra, Hv, expiβ.real, expiβ.imag)
-        _step_3(self.a, self.b, self.ell_max, self.mp_max, Hwedge, Hextra, expiβ.real, expiβ.imag)
+        _step_2(self.g, self.h, self.ell_max, self.mp_max, Hwedge, Hextra, Hv, expiβ)
+        _step_3(self.a, self.b, self.ell_max, self.mp_max, Hwedge, Hextra, expiβ)
         _step_4(self.d, self.ell_max, self.mp_max, Hwedge, Hv)
         _step_5(self.d, self.ell_max, self.mp_max, Hwedge, Hv)
         return Hwedge
@@ -381,7 +400,14 @@ class Wigner:
             ]
 
         """
-        Hwedge = self.H(expiβ, workspace)
+        if workspace is not None:
+            Hwedge, Hv, Hextra, zₐpowers, zᵧpowers, z = self._split_workspace(workspace)
+        else:
+            Hwedge, Hv, Hextra, zₐpowers, zᵧpowers, z = (
+                self.Hwedge, self.Hv, self.Hextra, self.zₐpowers, self.zᵧpowers, self.z
+            )
+
+        Hwedge = self.H(expiβ, Hwedge, Hv, Hextra)
         d = out if out is not None else np.zeros(self.dsize, dtype=float)
         _fill_wigner_d(self.ell_min, self.ell_max, self.mp_max, d, Hwedge)
         return d
@@ -434,13 +460,19 @@ class Wigner:
             ]
 
         """
-        R = quaternionic.array(R)
-        z = R.to_euler_phases
-        Hwedge = self.H(z[1], workspace)
+        if workspace is not None:
+            Hwedge, Hv, Hextra, zₐpowers, zᵧpowers, z = self._split_workspace(workspace)
+        else:
+            Hwedge, Hv, Hextra, zₐpowers, zᵧpowers, z = (
+                self.Hwedge, self.Hv, self.Hextra, self.zₐpowers, self.zᵧpowers, self.z
+            )
+
+        to_euler_phases(R, z)
+        Hwedge = self.H(z[1], Hwedge, Hv, Hextra)
         𝔇 = out if out is not None else np.zeros(self.Dsize, dtype=complex)
-        zₐpowers = complex_powers(z[0], self.ell_max)
-        zᵧpowers = complex_powers(z[2], self.ell_max)
-        _fill_wigner_D(self.ell_min, self.ell_max, self.mp_max, 𝔇, Hwedge, zₐpowers, zᵧpowers)
+        _complex_powers(z[0:1], self.ell_max, zₐpowers)
+        _complex_powers(z[2:3], self.ell_max, zᵧpowers)
+        _fill_wigner_D(self.ell_min, self.ell_max, self.mp_max, 𝔇, Hwedge, zₐpowers[0], zᵧpowers[0])
         return 𝔇
 
     def sYlm(self, s, R, out=None, workspace=None):
@@ -506,14 +538,20 @@ class Wigner:
                 f"Given output array has shape {out.shape}; it should be {(self.Ysize,)}"
             )
 
-        R = quaternionic.array(R)
-        z = R.to_euler_phases
+        if workspace is not None:
+            Hwedge, Hv, Hextra, zₐpowers, zᵧpowers, z = self._split_workspace(workspace)
+        else:
+            Hwedge, Hv, Hextra, zₐpowers, zᵧpowers, z = (
+                self.Hwedge, self.Hv, self.Hextra, self.zₐpowers, self.zᵧpowers, self.z
+            )
 
-        Hwedge = self.H(z[1], workspace)
+        to_euler_phases(R, z)
+
+        Hwedge = self.H(z[1], Hwedge, Hv, Hextra)
         Y = out if out is not None else np.zeros(self.Ysize, dtype=complex)
-        zₐpowers = complex_powers(z[0], self.ell_max)
-        zᵧpowers = complex_powers(z[2], self.ell_max)
-        _fill_sYlm(self.ell_min, self.ell_max, self.mp_max, s, Y, Hwedge, zₐpowers, zᵧpowers)
+        _complex_powers(z[0:1], self.ell_max, zₐpowers)
+        zᵧpower = z[2]**abs(s)
+        _fill_sYlm(self.ell_min, self.ell_max, self.mp_max, s, Y, Hwedge, zₐpowers[0], zᵧpower)
         return Y
 
     def rotate(self, modes, R, out=None, workspace=None):
@@ -691,13 +729,13 @@ def _fill_wigner_D(ell_min, ell_max, mp_max, 𝔇, Hwedge, zₐpowers, zᵧpower
 
 
 @jit
-def _fill_sYlm(ell_min, ell_max, mp_max, s, Y, Hwedge, zₐpowers, zᵧpowers):
+def _fill_sYlm(ell_min, ell_max, mp_max, s, Y, Hwedge, zₐpowers, zᵧpower):
     """Helper function for Wigner.sYlm"""
     #  ₛYₗₘ(R) = (-1)ˢ √((2ℓ+1)/(4π)) 𝔇ˡₘ₋ₛ(R)
     ell0 = max(abs(s), ell_min)
     Y[:Yindex(ell0, -ell0, ell_min)] = 0.0
     if s >= 0:
-        c1 = zᵧpowers[s].conjugate()
+        c1 = zᵧpower.conjugate()
         for ell in range(ell0, ell_max+1):
             i_Y = Yindex(ell, -ell, ell_min)
             c2 = c1 * np.sqrt((2 * ell + 1) * inverse_4pi)
@@ -710,7 +748,7 @@ def _fill_sYlm(ell_min, ell_max, mp_max, s, Y, Hwedge, zₐpowers, zᵧpowers):
                 Y[i_Y] = c2 * ϵ(m) * Hwedge[i_H] * zₐpowers[m]
                 i_Y += 1
     else:  # s < 0
-        c1 = (-1)**s * zᵧpowers[-s]
+        c1 = (-1)**s * zᵧpower
         for ell in range(ell0, ell_max+1):
             i_Y = Yindex(ell, -ell, ell_min)
             c2 = c1 * np.sqrt((2 * ell + 1) * inverse_4pi)

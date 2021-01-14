@@ -32,7 +32,9 @@ def test_H_vs_sympy(ell_max_slow, eps):
 
     for mp_max in range(ell_max):
         w = sf.Wigner(ell_max, mp_max=mp_max)
-        Hnmpm = w.H(np.exp(1j * beta))
+        workspace = w.new_workspace()
+        Hwedge, Hv, Hextra, _, _, _ = w._split_workspace(workspace)
+        Hnmpm = w.H(np.exp(1j * beta), Hwedge, Hv, Hextra)
         for n in range(w.ell_max+1):
             for mp in range(-min(n, mp_max), min(n, mp_max)+1):
                 for m in range(-n, n+1):
