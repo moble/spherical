@@ -30,8 +30,6 @@ def test_vector_as_ell_1_modes(special_angles):
     ell_max = 1
     wigner = sf.Wigner(ell_max, ell_min=ell_min)
 
-    indices = np.array([[1, -1], [1, 0], [1, 1]])
-
     def nhat(theta, phi):
         return np.array([math.sin(theta) * math.cos(phi),
                          math.sin(theta) * math.sin(phi),
