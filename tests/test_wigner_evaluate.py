@@ -71,7 +71,7 @@ def test_wigner_evaluate(horner, ell_max_slow, eps):
 @pytest.mark.parametrize("horner", [True, False])
 @requires_spinsfast
 @slow
-def test_wigner_spinsfast(horner, ell_max_slow, eps):
+def test_wigner_evaluate_vs_spinsfast(horner, ell_max_slow, eps):
     import time
 
     ell_max = max(3, ell_max_slow)

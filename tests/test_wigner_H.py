@@ -16,9 +16,9 @@ slow = pytest.mark.slow
 @requires_sympy
 @slow
 def test_H_vs_sympy(eps):
-    from sympy.physics.quantum.spin import WignerD as Wigner_D_sympy
-
     """Eq. (29) of arxiv:1403.7698: d^{m',m}_{n}(β) = ϵ(m') ϵ(-m) H^{m',m}_{n}(β)"""
+
+    from sympy.physics.quantum.spin import WignerD as Wigner_D_sympy
 
     def ϵ(m):
         m = np.asarray(m)
