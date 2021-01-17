@@ -287,7 +287,7 @@ def test_Wigner_D_vs_Wikipedia(special_angles, ell_max_slow, eps):
     print("")
     for alpha in special_angles:
         print("\talpha={0}".format(alpha))  # Need to show some progress for CI
-        for beta in special_angles:
+        for beta in special_angles[len(special_angles)//2:]:  # Skip beta < 0
             print("\t\tbeta={0}".format(beta))
             for gamma in special_angles:
                 a = np.conjugate(np.array([Wigner_D_Wikipedia(alpha, beta, gamma, ell, mp, m) for ell,mp,m in ell_mp_m]))
