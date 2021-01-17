@@ -30,7 +30,9 @@ def test_H_vs_sympy(ell_max_slow, eps):
     alpha, beta, gamma = 0.0, 0.1, 0.0
     max_error = 0.0
 
+    print()
     for mp_max in range(ell_max):
+        print(f"Checking mp_max={mp_max} (going up to {ell_max-1})")
         w = sf.Wigner(ell_max, mp_max=mp_max)
         workspace = w.new_workspace()
         Hwedge, Hv, Hextra, _, _, _ = w._split_workspace(workspace)
