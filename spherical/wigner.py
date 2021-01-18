@@ -848,7 +848,7 @@ def _rotate_Horner(fₗₘ, fₗₙ, ell_min_w, ell_max_w, mp_max_w, ell_min_m, 
             i_Hp = _WignerHindex(ell, m, ell, mp_max_w)
 
             # Initialize with n=0 term
-            fₗₙ[:, iₘ] = fₗₘ[:, i0] * Hwedge[i_H]
+            fₗₙ[:, iₘ] = fₗₘ[:, i0] * Hwedge[i_H]  # H(ell, 0, m)
 
             if ell > 0:
                 i_nm = max(0, abs_m-1)
@@ -952,14 +952,20 @@ def _evaluate_Horner(mode_weights, function_values, ell_min_w, ell_max_w, mp_max
                 # Compute dˡₘ₋ₛ terms recursively for 0<m<l, using symmetries for negative m, and
                 # simultaneously add the mode weights times zᵧᵐ=exp[i(ϕₛ-ϕₐ)m] to the result using
                 # Horner form
+
+                # m = ell
                 negative_terms = fₗₘ[i_fₗₘ-ell] * Hwedge[i_Hp + ell - abs_s]  # H(ell, -s, -ell)
                 positive_terms = ϵ_m * fₗₘ[i_fₗₘ+ell] * Hwedge[i_Hn + ell - abs_s]  # H(ell, -s, ell)
+
+                # m ∈ (ell, max(1, |s|)]
                 for m in range(ell-1, i0, -1):  # |s| ≤ m < ell
                     ϵ_m *= -1
                     negative_terms *= z̄ₐ
                     negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[i_Hp + m - abs_s]  # H(ell, -s, -m)
                     positive_terms *= zₐ
                     positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[i_Hn + m - abs_s]  # H(ell, -s, m)
+
+                # m ∈ (|s|, 0)
                 if spin_weight_m >= 0:
                     for m in range(i0, 0, -1):  # 0 < m < |s|
                         ϵ_m *= -1
@@ -974,6 +980,7 @@ def _evaluate_Horner(mode_weights, function_values, ell_min_w, ell_max_w, mp_max
                         negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[_WignerHindex(ell, -m, -spin_weight_m, mp_max_w)]  # H(ell, -s, -m)
                         positive_terms *= zₐ
                         positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[_WignerHindex(ell, m, -spin_weight_m, mp_max_w)]  # H(ell, -s, m)
+
                 f_ell += negative_terms * z̄ₐ
                 f_ell += positive_terms * zₐ
 
