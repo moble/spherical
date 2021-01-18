@@ -842,15 +842,12 @@ def _rotate_Horner(fₗₘ, fₗₙ, ell_min_w, ell_max_w, mp_max_w, ell_min_m, 
             # fₗₙ = ϵ₋ₘ zᵧᵐ {fₗ₀ Hˡ₀ₘ(R) + Σₚₙ [fₗ₋ₙ Hˡ₋ₙₘ(R) / zₐⁿ + fₗₘ (-1)ⁿ Hˡₙₘ(R) zₐⁿ]}
             abs_m = abs(m)
             i0 = Yindex(ell, 0, ell_min_m)
-            iₘ = i0 + m  # Yindex(ell, m, ell_min_m)
+            iₘ = i0 + m
             i_H = _WignerHindex(ell, 0, abs_m, mp_max_w)
-            # i_Hp = _WignerHindex(ell, m, abs_m, mp_max_w)
-            # i_Hn = _WignerHindex(ell, -m, abs_m, mp_max_w)
             i_Hn = _WignerHindex(ell, -m, ell, mp_max_w)
             i_Hp = _WignerHindex(ell, m, ell, mp_max_w)
 
             # Initialize with n=0 term
-            # fₗₙ[:, iₘ] = fₗₘ[:, Yindex(ell, 0, ell_min_m)] * Hwedge[WignerHindex(ell, 0, m, mp_max_w)]
             fₗₙ[:, iₘ] = fₗₘ[:, i0] * Hwedge[i_H]
 
             if ell > 0:
@@ -862,8 +859,6 @@ def _rotate_Horner(fₗₘ, fₗₙ, ell_min_w, ell_max_w, mp_max_w, ell_min_m, 
                 # Horner form
 
                 # n = ell
-                # negative_terms[:] = fₗₘ[:, i0-ell] * Hwedge[i_Hn + ell - abs_m]  # H(ell, -ell, m)
-                # positive_terms[:] = ϵ_n * fₗₘ[:, i0+ell] * Hwedge[i_Hp + ell - abs_m]  # H(ell, ell, m)
                 negative_terms[:] = fₗₘ[:, i0-ell] * Hwedge[i_Hn]  # H(ell, -ell, m)
                 positive_terms[:] = ϵ_n * fₗₘ[:, i0+ell] * Hwedge[i_Hp]  # H(ell, ell, m)
 
@@ -873,10 +868,8 @@ def _rotate_Horner(fₗₘ, fₗₙ, ell_min_w, ell_max_w, mp_max_w, ell_min_m, 
                     i_Hp -= 1
                     ϵ_n *= -1
                     negative_terms *= z̄ₐ
-                    # negative_terms += fₗₘ[:, i0-n] * Hwedge[i_Hn + n - abs_m]  # H(ell, -n, m)
                     negative_terms += fₗₘ[:, i0-n] * Hwedge[i_Hn]  # H(ell, -n, m)
                     positive_terms *= zₐ
-                    # positive_terms += ϵ_n * fₗₘ[:, i0+n] * Hwedge[i_Hp + n - abs_m]  # H(ell, n, m)
                     positive_terms += ϵ_n * fₗₘ[:, i0+n] * Hwedge[i_Hp]  # H(ell, n, m)
 
                 # n ∈ (|m|, 0)
@@ -886,12 +879,8 @@ def _rotate_Horner(fₗₘ, fₗₙ, ell_min_w, ell_max_w, mp_max_w, ell_min_m, 
                         i_Hp -= ell - n
                         ϵ_n *= -1
                         negative_terms *= z̄ₐ
-                        # negative_terms += fₗₘ[:, i0-n] * Hwedge[i_Hn + (m*(2*ell - m + 3) + n*(-2*ell + n - 3)) // 2]  # H(ell, -n, m)
-                        # negative_terms += fₗₘ[:, i0-n] * Hwedge[WignerHindex(ell, -n, m)]  # H(ell, -n, m)
                         negative_terms += fₗₘ[:, i0-n] * Hwedge[i_Hn]  # H(ell, -n, m)
                         positive_terms *= zₐ
-                        # positive_terms += ϵ_n * fₗₘ[:, i0+n] * Hwedge[i_Hp - (m*(2*ell - m + 1) + n*(-2*ell + n - 1)) // 2]  # H(ell, n, m)
-                        # positive_terms += ϵ_n * fₗₘ[:, i0+n] * Hwedge[WignerHindex(ell, n, m)]  # H(ell, n, m)
                         positive_terms += ϵ_n * fₗₘ[:, i0+n] * Hwedge[i_Hp]  # H(ell, n, m)
                 else:
                     for n in range(i_nm, 0, -1):
@@ -899,12 +888,8 @@ def _rotate_Horner(fₗₘ, fₗₙ, ell_min_w, ell_max_w, mp_max_w, ell_min_m, 
                         i_Hp += ell - n + 1
                         ϵ_n *= -1
                         negative_terms *= z̄ₐ
-                        # negative_terms += fₗₘ[:, i0-n] * Hwedge[i_Hn - (-m*(2*ell + m + 1) + n*(-2*ell + n - 1)) // 2]  # H(ell, -n, m)
-                        # negative_terms += fₗₘ[:, i0-n] * Hwedge[WignerHindex(ell, -n, m)]  # H(ell, -n, m)
                         negative_terms += fₗₘ[:, i0-n] * Hwedge[i_Hn]  # H(ell, -n, m)
                         positive_terms *= zₐ
-                        # positive_terms += ϵ_n * fₗₘ[:, i0+n] * Hwedge[i_Hp + (-m*(2*ell + m + 3) + n*(-2*ell + n - 3)) // 2]  # H(ell, n, m)
-                        # positive_terms += ϵ_n * fₗₘ[:, i0+n] * Hwedge[WignerHindex(ell, n, m)]  # H(ell, n, m)
                         positive_terms += ϵ_n * fₗₘ[:, i0+n] * Hwedge[i_Hp]  # H(ell, n, m)
 
                 # Accumulate all the terms from the Horner expansion
