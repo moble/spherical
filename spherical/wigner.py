@@ -939,14 +939,13 @@ def _evaluate_Horner(mode_weights, function_values, ell_min_w, ell_max_w, mp_max
             # Establish some base indices, relative to which offsets are simple
             i_fₗₘ = Yindex(ell, 0, ell_min_m)
             i_H = _WignerHindex(ell, 0, abs_s, mp_max_w)
-            i_Hp = _WignerHindex(ell, spin_weight_m, abs_s, mp_max_w)
-            i_Hn = _WignerHindex(ell, -spin_weight_m, abs_s, mp_max_w)
+            i_Hn = _WignerHindex(ell, spin_weight_m, ell, mp_max_w)
+            i_Hp = _WignerHindex(ell, -spin_weight_m, ell, mp_max_w)
 
             # Initialize with m=0 term
-            f_ell = fₗₘ[i_fₗₘ] * Hwedge[i_H]  # H(ell, -s, 0)
+            f_ell = fₗₘ[i_fₗₘ] * Hwedge[i_H]  # H(ell, 0, -s)
 
             if ell > 0:
-
                 ϵ_m = int((-1)**ell)
 
                 # Compute dˡₘ₋ₛ terms recursively for 0<m<l, using symmetries for negative m, and
@@ -954,32 +953,38 @@ def _evaluate_Horner(mode_weights, function_values, ell_min_w, ell_max_w, mp_max
                 # Horner form
 
                 # m = ell
-                negative_terms = fₗₘ[i_fₗₘ-ell] * Hwedge[i_Hp + ell - abs_s]  # H(ell, -s, -ell)
-                positive_terms = ϵ_m * fₗₘ[i_fₗₘ+ell] * Hwedge[i_Hn + ell - abs_s]  # H(ell, -s, ell)
+                negative_terms = fₗₘ[i_fₗₘ-ell] * Hwedge[i_Hn]  # H(ell, -ell, -s) = H(ell, s, ell)
+                positive_terms = ϵ_m * fₗₘ[i_fₗₘ+ell] * Hwedge[i_Hp]  # H(ell, ell, -s) = H(ell, -s, ell)
 
                 # m ∈ (ell, max(1, |s|)]
                 for m in range(ell-1, i0, -1):  # |s| ≤ m < ell
+                    i_Hn -= 1
+                    i_Hp -= 1
                     ϵ_m *= -1
                     negative_terms *= z̄ₐ
-                    negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[i_Hp + m - abs_s]  # H(ell, -s, -m)
+                    negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[i_Hn]  # H(ell, -m, -s) = H(ell, s, m)
                     positive_terms *= zₐ
-                    positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[i_Hn + m - abs_s]  # H(ell, -s, m)
+                    positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[i_Hp]  # H(ell, m, -s) = H(ell, -s, m)
 
                 # m ∈ (|s|, 0)
-                if spin_weight_m >= 0:
+                if -spin_weight_m >= 0:
                     for m in range(i0, 0, -1):  # 0 < m < |s|
+                        i_Hn += ell - m + 1
+                        i_Hp -= ell - m
                         ϵ_m *= -1
                         negative_terms *= z̄ₐ
-                        negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[_WignerHindex(ell, m, spin_weight_m, mp_max_w)]  # H(ell, -s, -m)
+                        negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[i_Hn]  # H(ell, -m, -s)
                         positive_terms *= zₐ
-                        positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[_WignerHindex(ell, -m, spin_weight_m, mp_max_w)]  # H(ell, -s, m)
+                        positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[i_Hp]  # H(ell, m, -s)
                 else:
                     for m in range(i0, 0, -1):  # 0 < m < |s|
+                        i_Hn -= ell - m
+                        i_Hp += ell - m + 1
                         ϵ_m *= -1
                         negative_terms *= z̄ₐ
-                        negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[_WignerHindex(ell, -m, -spin_weight_m, mp_max_w)]  # H(ell, -s, -m)
+                        negative_terms += fₗₘ[i_fₗₘ-m] * Hwedge[i_Hn]  # H(ell, -m, -s)
                         positive_terms *= zₐ
-                        positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[_WignerHindex(ell, m, -spin_weight_m, mp_max_w)]  # H(ell, -s, m)
+                        positive_terms += ϵ_m * fₗₘ[i_fₗₘ+m] * Hwedge[i_Hp]  # H(ell, m, -s)
 
                 f_ell += negative_terms * z̄ₐ
                 f_ell += positive_terms * zₐ
