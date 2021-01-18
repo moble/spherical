@@ -61,7 +61,6 @@ def test_Wigner_D_representation_property(Rs, ell_max_slow, eps):
                 Dˡ2 = D2[i1:i2+1].reshape(shape)
                 Dˡ12 = D12[i1:i2+1].reshape(shape)
                 assert np.allclose(Dˡ1 @ Dˡ2, Dˡ12, rtol=ϵ, atol=ϵ), ell
-                # assert np.allclose(Dˡ1 @ Dˡ2, Dˡ12, atol=ell_max_slow * precision_Wigner_D_element), ell
     t2 = time.perf_counter()
     print(f"\tFinished in {t2-t1:.4f} seconds.")
 
