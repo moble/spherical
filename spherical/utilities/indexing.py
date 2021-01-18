@@ -92,6 +92,7 @@ def WignerHrange(mp_max, ell_max=-1):
 @jit
 def _WignerHindex(ell, mp, m, mp_max):
     """Helper function for `WignerHindex`"""
+    mp_max = min(mp_max, ell)
     i = WignerHsize(mp_max, ell-1)  # total size of everything with smaller ell
     if mp<1:
         i += (mp_max + mp) * (2*ell - mp_max + mp + 1) // 2  # size of wedge to the left of m'
@@ -132,6 +133,8 @@ def WignerHindex(ell, mp, m, mp_max=None):
         ]
 
     """
+    if ell == 0:
+        return 0
     mpmax = ell
     if mp_max is not None:
         mpmax = min(mp_max, mpmax)

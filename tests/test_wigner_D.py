@@ -61,7 +61,6 @@ def test_Wigner_D_representation_property(Rs, ell_max_slow, eps):
                 Dˡ2 = D2[i1:i2+1].reshape(shape)
                 Dˡ12 = D12[i1:i2+1].reshape(shape)
                 assert np.allclose(Dˡ1 @ Dˡ2, Dˡ12, rtol=ϵ, atol=ϵ), ell
-                # assert np.allclose(Dˡ1 @ Dˡ2, Dˡ12, atol=ell_max_slow * precision_Wigner_D_element), ell
     t2 = time.perf_counter()
     print(f"\tFinished in {t2-t1:.4f} seconds.")
 
@@ -287,7 +286,7 @@ def test_Wigner_D_vs_Wikipedia(special_angles, ell_max_slow, eps):
     print("")
     for alpha in special_angles:
         print("\talpha={0}".format(alpha))  # Need to show some progress for CI
-        for beta in special_angles:
+        for beta in special_angles[len(special_angles)//2:]:  # Skip beta < 0
             print("\t\tbeta={0}".format(beta))
             for gamma in special_angles:
                 a = np.conjugate(np.array([Wigner_D_Wikipedia(alpha, beta, gamma, ell, mp, m) for ell,mp,m in ell_mp_m]))
