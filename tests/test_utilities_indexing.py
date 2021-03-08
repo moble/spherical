@@ -41,7 +41,6 @@ def test_WignerHsize(ell_max):
     # print(f"Total sizes checked: {k:_}")
 
 
-@slow
 def test_WignerHindex(ell_max_slow):
     # k = 0
     def fold_H_indices(ell, mp, m):
@@ -76,7 +75,6 @@ def test_WignerHindex(ell_max_slow):
     # print(f"\nTotal indices checked: {k:_}")
 
 
-@slow
 def test_WignerDrange(ell_max_slow):
     def r(ell_min, mp_max, ell_max):
         return [
@@ -247,8 +245,8 @@ def test_LM_total_size(ell_max):
             assert sf.LM_index(l_max + 1, -(l_max + 1), l_min) == sf.LM_total_size(l_min, l_max)
 
 
-def test_LMpM_range(ell_max):
-    for l_max in range(ell_max + 1):
+def test_LMpM_range(ell_max_slow):
+    for l_max in range(ell_max_slow + 1):
         assert np.array_equal(sf.LMpM_range(l_max, l_max),
                               np.array([[l_max, mp, m]
                                         for mp in range(-l_max, l_max + 1)
@@ -261,7 +259,6 @@ def test_LMpM_range(ell_max):
                                             for m in range(-ell, ell + 1)]))
 
 
-@slow
 def test_LMpM_index(ell_max_slow):
     for ell_min in range(ell_max_slow + 1):
         LMpM = sf.LMpM_range(ell_min, ell_max_slow)

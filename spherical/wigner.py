@@ -183,7 +183,7 @@ class Wigner:
 
             [
                 H(ℓ, mp, m)
-                for ℓ in range(ell_min, ell_max+1)
+                for ℓ in range(ell_max+1)
                 for mp in range(-min(ℓ, mp_max), min(ℓ, mp_max)+1)
                 for m in range(abs(mp), ℓ+1)
             ]
@@ -291,7 +291,7 @@ class Wigner:
             ]
 
         """
-        return Yindex(self.ell_min, ell, m)
+        return Yindex(ell, m, self.ell_min)
 
     def H(self, expiβ, Hwedge, Hv, Hextra):
         """Compute a quarter of the H matrix
@@ -469,6 +469,12 @@ class Wigner:
             raise ValueError(
                 f"Cannot compute full 𝔇 matrix up to ell_max={self.ell_max} if mp_max is only {self.mp_max}"
             )
+        if out is not None and out.size != (self.Dsize * R.size // 4):
+            raise ValueError(
+                f"Given output array has size {out.size}; it should be {self.Dsize * R.size // 4}"
+            )
+        if out is not None and out.dtype != np.complex:
+            raise ValueError(f"Given output array has dtype {out.dtype}; it should be complex")
 
         if workspace is not None:
             Hwedge, Hv, Hextra, zₐpowers, zᵧpowers, z = self._split_workspace(workspace)
@@ -477,13 +483,22 @@ class Wigner:
                 self.Hwedge, self.Hv, self.Hextra, self.zₐpowers, self.zᵧpowers, self.z
             )
 
-        to_euler_phases(R, z)
-        Hwedge = self.H(z[1], Hwedge, Hv, Hextra)
-        𝔇 = out if out is not None else np.zeros(self.Dsize, dtype=complex)
-        _complex_powers(z[0:1], self.ell_max, zₐpowers)
-        _complex_powers(z[2:3], self.ell_max, zᵧpowers)
-        _fill_wigner_D(self.ell_min, self.ell_max, self.mp_max, 𝔇, Hwedge, zₐpowers[0], zᵧpowers[0])
-        return 𝔇
+        quaternions = quaternionic.array(R).ndarray.reshape((-1, 4))
+        function_values = (
+            out.reshape(quaternions.shape[0], self.Dsize)
+            if out is not None
+            else np.zeros(quaternions.shape[:-1] + (self.Dsize,), dtype=complex)
+        )
+
+        # Loop over all input quaternions
+        for i_R in range(quaternions.shape[0]):
+            to_euler_phases(quaternions[i_R], z)
+            Hwedge = self.H(z[1], Hwedge, Hv, Hextra)
+            𝔇 = function_values[i_R]
+            _complex_powers(z[0:1], self.ell_max, zₐpowers)
+            _complex_powers(z[2:3], self.ell_max, zᵧpowers)
+            _fill_wigner_D(self.ell_min, self.ell_max, self.mp_max, 𝔇, Hwedge, zₐpowers[0], zᵧpowers[0])
+        return function_values.reshape(R.shape[:-1] + (self.Dsize,))
 
     def sYlm(self, s, R, out=None, workspace=None):
         """Evaluate (possibly spin-weighted) spherical harmonic
@@ -543,10 +558,12 @@ class Wigner:
                 f"This object has mp_max={self.mp_max}, which is not "
                 f"sufficient to compute sYlm values for spin weight s={s}"
             )
-        if out is not None and out.shape != (self.Ysize,):
+        if out is not None and out.size != (self.Ysize * R.size // 4):
             raise ValueError(
-                f"Given output array has shape {out.shape}; it should be {(self.Ysize,)}"
+                f"Given output array has size {out.size}; it should be {self.Ysize * R.size // 4}"
             )
+        if out is not None and out.dtype != np.complex:
+            raise ValueError(f"Given output array has dtype {out.dtype}; it should be complex")
 
         if workspace is not None:
             Hwedge, Hv, Hextra, zₐpowers, zᵧpowers, z = self._split_workspace(workspace)
@@ -555,14 +572,23 @@ class Wigner:
                 self.Hwedge, self.Hv, self.Hextra, self.zₐpowers, self.zᵧpowers, self.z
             )
 
-        to_euler_phases(R, z)
+        quaternions = quaternionic.array(R).ndarray.reshape((-1, 4))
+        function_values = (
+            out.reshape(quaternions.shape[0], self.Ysize)
+            if out is not None
+            else np.zeros(quaternions.shape[:-1] + (self.Ysize,), dtype=complex)
+        )
 
-        Hwedge = self.H(z[1], Hwedge, Hv, Hextra)
-        Y = out if out is not None else np.zeros(self.Ysize, dtype=complex)
-        _complex_powers(z[0:1], self.ell_max, zₐpowers)
-        zᵧpower = z[2]**abs(s)
-        _fill_sYlm(self.ell_min, self.ell_max, self.mp_max, s, Y, Hwedge, zₐpowers[0], zᵧpower)
-        return Y
+        # Loop over all input quaternions
+        for i_R in range(quaternions.shape[0]):
+            to_euler_phases(quaternions[i_R], z)
+            Hwedge = self.H(z[1], Hwedge, Hv, Hextra)
+            Y = function_values[i_R]
+            _complex_powers(z[0:1], self.ell_max, zₐpowers)
+            zᵧpower = z[2]**abs(s)
+            _fill_sYlm(self.ell_min, self.ell_max, self.mp_max, s, Y, Hwedge, zₐpowers[0], zᵧpower)
+
+        return function_values.reshape(R.shape[:-1] + (self.Ysize,))
 
     def rotate(self, modes, R, out=None, workspace=None, horner=False):
         """Rotate Modes object
@@ -647,7 +673,6 @@ class Wigner:
             **modes._metadata
         )
 
-
     def evaluate(self, modes, R, out=None, workspace=None, horner=False):
         """Evaluate Modes object as function of rotations
 
@@ -669,10 +694,10 @@ class Wigner:
             present, this object's default workspace will be used.  Note that it is not
             safe to use the same workspace on multiple threads.
         horner : bool, optional
-            If False (the default), rotation will be done using matrix multiplication
-            with Wigner's 𝔇 — which will typically use BLAS, and thus be as fast as
-            possible.  If True, the result will be built up using Horner form, which
-            should be more accurate, but may be significantly slower.
+            If False (the default), evaluation will be done using vector multiplication
+            with sYlm — which will typically use BLAS, and thus be as fast as possible.
+            If True, the result will be built up using Horner form, which should be
+            more accurate, but may be significantly slower.
 
         Returns
         -------
