@@ -1026,7 +1026,7 @@ pymdown-extensions = ["pymdown-extensions"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6"
-content-hash = "be7a5380102da72f4b45b67e28979391050709afb84efccdcb104402fc2d755b"
+content-hash = "a6a1c336744b53a60ff60e3cea5fb62b064dc5888578b23b621aae89fa770f80"
 
 [metadata.files]
 alabaster = [

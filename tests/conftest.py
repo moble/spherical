@@ -15,6 +15,12 @@ except:
     requires_spinsfast = pytest.mark.skip(reason="spinsfast is missing")
 
 try:
+    import scipy
+    requires_scipy = lambda f: f
+except:
+    requires_scipy = pytest.mark.skip(reason="scipy is missing")
+
+try:
     import sympy
     requires_sympy = lambda f: f
 except:

@@ -12,7 +12,6 @@ include = ["tests"]
 python = "^3.6"
 importlib-metadata = {version = "^1.0", python = "<3.8"}
 numpy = "^1.13"
-scipy = "^1.0"
 numba = {version = ">=0.50", markers = "implementation_name == 'cpython'"}
 mkdocs = {version = ">=1.1.2", optional = true, markers = "implementation_name == 'cpython'"}
 black = {version = ">=20.8b1", optional = true, markers = "implementation_name == 'cpython'"}
@@ -24,6 +23,7 @@ spinsfast = {version = "^104.2020.8", markers = "sys_platform != 'win32'"}
 [tool.poetry.dev-dependencies]
 pytest = "^6.0"
 pytest-cov = ">=2.10.1"
+scipy = "^1.0"
 sympy = "^1.6.2"
 line_profiler = {version = "^3.0.2", markers = "sys_platform != 'win32'"}
 ipython = "<7.17"
