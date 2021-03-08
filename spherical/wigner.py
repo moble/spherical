@@ -543,10 +543,12 @@ class Wigner:
                 f"This object has mp_max={self.mp_max}, which is not "
                 f"sufficient to compute sYlm values for spin weight s={s}"
             )
-        if out is not None and out.shape != (self.Ysize,):
+        if out is not None and out.size != (self.Ysize * R.size // 4):
             raise ValueError(
-                f"Given output array has shape {out.shape}; it should be {(self.Ysize,)}"
+                f"Given output array has size {out.size}; it should be {self.Ysize * R.size // 4}"
             )
+        if out is not None and out.dtype != np.complex:
+            raise ValueError(f"Given output array has dtype {out.dtype}; it should be complex")
 
         if workspace is not None:
             Hwedge, Hv, Hextra, zₐpowers, zᵧpowers, z = self._split_workspace(workspace)
@@ -555,14 +557,23 @@ class Wigner:
                 self.Hwedge, self.Hv, self.Hextra, self.zₐpowers, self.zᵧpowers, self.z
             )
 
-        to_euler_phases(R, z)
+        quaternions = quaternionic.array(R).ndarray.reshape((-1, 4))
+        function_values = (
+            out.reshape(quaternions.shape[0], self.Ysize)
+            if out is not None
+            else np.zeros(quaternions.shape[:-1] + (self.Ysize,), dtype=complex)
+        )
 
-        Hwedge = self.H(z[1], Hwedge, Hv, Hextra)
-        Y = out if out is not None else np.zeros(self.Ysize, dtype=complex)
-        _complex_powers(z[0:1], self.ell_max, zₐpowers)
-        zᵧpower = z[2]**abs(s)
-        _fill_sYlm(self.ell_min, self.ell_max, self.mp_max, s, Y, Hwedge, zₐpowers[0], zᵧpower)
-        return Y
+        # Loop over all input quaternions
+        for i_R in range(quaternions.shape[0]):
+            to_euler_phases(quaternions[i_R], z)
+            Hwedge = self.H(z[1], Hwedge, Hv, Hextra)
+            Y = function_values[i_R]
+            _complex_powers(z[0:1], self.ell_max, zₐpowers)
+            zᵧpower = z[2]**abs(s)
+            _fill_sYlm(self.ell_min, self.ell_max, self.mp_max, s, Y, Hwedge, zₐpowers[0], zᵧpower)
+
+        return function_values.reshape(R.shape[:-1] + (self.Ysize,))
 
     def rotate(self, modes, R, out=None, workspace=None, horner=False):
         """Rotate Modes object
@@ -646,7 +657,6 @@ class Wigner:
             rotated_mode_weights.reshape(modes.shape),
             **modes._metadata
         )
-
 
     def evaluate(self, modes, R, out=None, workspace=None, horner=False):
         """Evaluate Modes object as function of rotations
