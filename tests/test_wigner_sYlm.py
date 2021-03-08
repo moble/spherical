@@ -10,6 +10,8 @@ import quaternionic
 import spherical as sf
 import pytest
 
+from .conftest import requires_scipy
+
 slow = pytest.mark.slow
 
 precision_SWSH = 2.e-15
@@ -96,6 +98,74 @@ def test_sYlm_vs_NINJA(special_angles, ell_max_slow, eps):
             ])
             Y2 = np.array([wigner.sYlm(s, R) for s in range(-ell_max_slow, ell_max_slow + 1)])
             assert np.allclose(Y1, Y2, rtol=ϵ, atol=ϵ)
+
+
+@requires_scipy
+def test_sYlm_vs_scipy(special_angles, ell_max_slow, eps):
+    from scipy.special import sph_harm
+    ϵ = 2 * ell_max_slow * eps
+    wigner = sf.Wigner(ell_max_slow)
+
+    # Test one quaternion at a time
+    # print()
+    for theta in np.arange(0, 1 * np.pi + 0.1, np.pi / 8.):
+        for phi in np.arange(0, 2 * np.pi + 0.1, np.pi / 8.):
+            R = quaternionic.array.from_spherical_coordinates(theta, phi)
+            # Note that sph_harm names its arguments (theta, phi) in that order, but swaps the
+            # meaning of theta and phi, so we have to swap the order here.
+            Y1 = np.array([
+                sph_harm(m, ell, phi, theta)
+                for ell in range(ell_max_slow+1)
+                for m in range(-ell, ell+1)
+            ])
+            Y2 = wigner.sYlm(0, R)
+            # print(Y1.shape, Y2.shape, theta, phi)
+            assert np.allclose(Y1, Y2, rtol=ϵ, atol=ϵ)
+
+    # Test N quaternions at a time
+    theta_phi = [
+        [theta, phi]
+        for theta in np.arange(0, 1 * np.pi + 0.1, np.pi / 8.)
+        for phi in np.arange(0, 2 * np.pi + 0.1, np.pi / 8.)
+    ]
+    R = quaternionic.array.from_spherical_coordinates(theta_phi)
+    Y1 = np.array([
+        [
+            sph_harm(m, ell, phi, theta)
+            for ell in range(ell_max_slow+1)
+            for m in range(-ell, ell+1)
+        ]
+        for theta, phi in theta_phi
+    ])
+    Y2 = wigner.sYlm(0, R)
+    # print()
+    # print(Y1.shape, Y2.shape)
+    assert np.allclose(Y1, Y2, rtol=ϵ, atol=ϵ)
+
+    # Test NxM quaternions at a time
+    theta_phi = [
+        [
+            [theta, phi]
+            for theta in np.arange(0, 1 * np.pi + 0.1, np.pi / 8.)
+        ]
+        for phi in np.arange(0, 2 * np.pi + 0.1, np.pi / 8.)
+    ]
+    R = quaternionic.array.from_spherical_coordinates(theta_phi)
+    Y1 = np.array([
+        [
+            [
+                sph_harm(m, ell, phi, theta)
+                for ell in range(ell_max_slow+1)
+                for m in range(-ell, ell+1)
+            ]
+            for theta, phi in tp
+        ]
+        for tp in theta_phi
+    ])
+    Y2 = wigner.sYlm(0, R)
+    # print()
+    # print(Y1.shape, Y2.shape)
+    assert np.allclose(Y1, Y2, rtol=ϵ, atol=ϵ)
 
 
 @slow
