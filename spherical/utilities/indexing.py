@@ -27,8 +27,8 @@ def WignerHsize(mp_max, ell_max=-2):
     Notes
     -----
     Here, it is assumed that only data with m≥|m'| are stored, and only
-    corresponding values are passed.  We also assume |m|≤ell and |m'|≤ell.  Neither of
-    these are checked.  The wedge array that this function indexes is ordered as
+    corresponding values are passed.  We also assume |m|≤ell and |m'|≤ell.  Neither
+    of these are checked.  The wedge array that this function indexes is ordered as
 
         [
             H(ell, mp, m) for ell in range(ell_max+1)
@@ -41,10 +41,10 @@ def WignerHsize(mp_max, ell_max=-2):
         ell_max = mp_max
     elif ell_max < 0:
         return 0
-    if mp_max is None or mp_max > ell_max:
+    if mp_max is None or mp_max >= ell_max:
         return (ell_max+1) * (ell_max+2) * (2*ell_max+3) // 6
     else:
-        return ((ell_max+1)*(ell_max+2)*(2*ell_max+3) - 2*(ell_max-mp_max)*(ell_max-mp_max+1)*(ell_max-mp_max+2)) // 6
+        return ((ell_max+1) * (ell_max+2) * (2*ell_max+3) - 2*(ell_max-mp_max)*(ell_max-mp_max+1)*(ell_max-mp_max+2)) // 6
 
 
 @jit
@@ -122,9 +122,9 @@ def WignerHindex(ell, mp, m, mp_max=None):
 
     Notes
     -----
-    Here, it is assumed that only data with m≥|m'| are stored, and only corresponding
-    values are passed.  We also assume |m|≤ell and |m'|≤ell.  Neither of these are
-    checked.  The wedge array that this function indexes is ordered as
+    Here, it is assumed that only data with m≥|m'| are stored, and only
+    corresponding values are passed.  We also assume |m|≤ell and |m'|≤ell.  Neither
+    of these are checked.  The wedge array that this function indexes is ordered as
 
         [
             H(ell, mp, m) for ell in range(ell_max+1)
