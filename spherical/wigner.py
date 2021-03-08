@@ -669,10 +669,10 @@ class Wigner:
             present, this object's default workspace will be used.  Note that it is not
             safe to use the same workspace on multiple threads.
         horner : bool, optional
-            If False (the default), rotation will be done using matrix multiplication
-            with Wigner's 𝔇 — which will typically use BLAS, and thus be as fast as
-            possible.  If True, the result will be built up using Horner form, which
-            should be more accurate, but may be significantly slower.
+            If False (the default), evaluation will be done using vector multiplication
+            with sYlm — which will typically use BLAS, and thus be as fast as possible.
+            If True, the result will be built up using Horner form, which should be
+            more accurate, but may be significantly slower.
 
         Returns
         -------
