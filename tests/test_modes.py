@@ -661,9 +661,8 @@ def test_modes_ufuncs():
 
 
 @requires_spinsfast
-@slow
-def test_modes_grid_variants(ell_max_slow, eps):
-    ell_max = max(3, ell_max_slow)
+def test_modes_grid_variants(ell_max, eps):
+    ell_max = max(3, ell_max)
     s_max = 2
     np.random.seed(1234)
     ϵ = 10 * (2 * ell_max + 1) * eps
@@ -686,9 +685,8 @@ def test_modes_grid_variants(ell_max_slow, eps):
         )
 
 
-@slow
-def test_modes_grid(ell_max_slow, eps):
-    ell_max = max(3, ell_max_slow)
+def test_modes_grid(ell_max, eps):
+    ell_max = max(3, ell_max)
     np.random.seed(1234)
     wigner = sf.Wigner(ell_max)
     ϵ = 10 * (2 * ell_max + 1) * eps

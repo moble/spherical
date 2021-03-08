@@ -101,10 +101,10 @@ def test_sYlm_vs_NINJA(special_angles, ell_max_slow, eps):
 
 
 @requires_scipy
-def test_sYlm_vs_scipy(special_angles, ell_max_slow, eps):
+def test_sYlm_vs_scipy(special_angles, ell_max, eps):
     from scipy.special import sph_harm
-    ϵ = 2 * ell_max_slow * eps
-    wigner = sf.Wigner(ell_max_slow)
+    ϵ = 2 * ell_max * eps
+    wigner = sf.Wigner(ell_max)
 
     # Test one quaternion at a time
     # print()
@@ -115,7 +115,7 @@ def test_sYlm_vs_scipy(special_angles, ell_max_slow, eps):
             # meaning of theta and phi, so we have to swap the order here.
             Y1 = np.array([
                 sph_harm(m, ell, phi, theta)
-                for ell in range(ell_max_slow+1)
+                for ell in range(ell_max+1)
                 for m in range(-ell, ell+1)
             ])
             Y2 = wigner.sYlm(0, R)
@@ -132,7 +132,7 @@ def test_sYlm_vs_scipy(special_angles, ell_max_slow, eps):
     Y1 = np.array([
         [
             sph_harm(m, ell, phi, theta)
-            for ell in range(ell_max_slow+1)
+            for ell in range(ell_max+1)
             for m in range(-ell, ell+1)
         ]
         for theta, phi in theta_phi
@@ -155,7 +155,7 @@ def test_sYlm_vs_scipy(special_angles, ell_max_slow, eps):
         [
             [
                 sph_harm(m, ell, phi, theta)
-                for ell in range(ell_max_slow+1)
+                for ell in range(ell_max+1)
                 for m in range(-ell, ell+1)
             ]
             for theta, phi in tp
@@ -168,7 +168,6 @@ def test_sYlm_vs_scipy(special_angles, ell_max_slow, eps):
     assert np.allclose(Y1, Y2, rtol=ϵ, atol=ϵ)
 
 
-@slow
 def test_sYlm_WignerD_expression(special_angles, ell_max_slow, eps):
     # ₛYₗₘ(R) = (-1)ˢ √((2ℓ+1)/(4π)) 𝔇ˡₘ₋ₛ(R)
     #        = (-1)ˢ √((2ℓ+1)/(4π)) 𝔇̄ˡ₋ₛₘ(R̄)
@@ -190,7 +189,6 @@ def test_sYlm_WignerD_expression(special_angles, ell_max_slow, eps):
                     assert np.allclose(Y_ℓ, Y_D, atol=ϵ, rtol=ϵ)
 
 
-@slow
 def test_sYlm_spin_behavior(Rs, special_angles, ell_max_slow, eps):
     # We expect that the SWSHs behave according to
     # sYlm( R * exp(gamma*z/2) ) = sYlm(R) * exp(-1j*s*gamma)
@@ -209,7 +207,6 @@ def test_sYlm_spin_behavior(Rs, special_angles, ell_max_slow, eps):
                 assert np.allclose(Y1, Y2, atol=ϵ, rtol=ϵ)
 
 
-@slow
 def test_sYlm_conjugation(special_angles, ell_max_slow, eps):
     # {s}Y{l,m}.conjugate() = (-1.)**(s+m) {-s}Y{l,-m}
     ϵ = 2 * ell_max_slow * eps

@@ -12,8 +12,8 @@ import pytest
 slow = pytest.mark.slow
 
 
-@pytest.mark.parametrize("horner", [True, False])
-@slow
+# @slow  ### Note that the following marks only the `horner=True` case as slow
+@pytest.mark.parametrize("horner", [pytest.param(True, marks=pytest.mark.slow), False])
 def test_wigner_rotate_composition(horner, Rs, ell_max_slow, eps):
     import time
     ell_min = 0

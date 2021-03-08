@@ -14,7 +14,6 @@ slow = pytest.mark.slow
 
 
 @pytest.mark.parametrize("horner", [True, False])
-@slow
 def test_wigner_evaluate(horner, ell_max_slow, eps):
     import time
 
@@ -70,11 +69,10 @@ def test_wigner_evaluate(horner, ell_max_slow, eps):
 
 @pytest.mark.parametrize("horner", [True, False])
 @requires_spinsfast
-@slow
-def test_wigner_evaluate_vs_spinsfast(horner, ell_max_slow, eps):
+def test_wigner_evaluate_vs_spinsfast(horner, ell_max, eps):
     import time
 
-    ell_max = max(3, ell_max_slow)
+    ell_max = max(3, ell_max)
     np.random.seed(1234)
     ϵ = ell_max * (2 * ell_max + 1) * eps
     n_theta = n_phi = 2 * ell_max + 1
