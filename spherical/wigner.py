@@ -183,7 +183,7 @@ class Wigner:
 
             [
                 H(ℓ, mp, m)
-                for ℓ in range(ell_min, ell_max+1)
+                for ℓ in range(ell_max+1)
                 for mp in range(-min(ℓ, mp_max), min(ℓ, mp_max)+1)
                 for m in range(abs(mp), ℓ+1)
             ]
@@ -291,7 +291,7 @@ class Wigner:
             ]
 
         """
-        return Yindex(self.ell_min, ell, m)
+        return Yindex(ell, m, self.ell_min)
 
     def H(self, expiβ, Hwedge, Hv, Hextra):
         """Compute a quarter of the H matrix
