@@ -469,6 +469,12 @@ class Wigner:
             raise ValueError(
                 f"Cannot compute full 𝔇 matrix up to ell_max={self.ell_max} if mp_max is only {self.mp_max}"
             )
+        if out is not None and out.size != (self.Dsize * R.size // 4):
+            raise ValueError(
+                f"Given output array has size {out.size}; it should be {self.Dsize * R.size // 4}"
+            )
+        if out is not None and out.dtype != np.complex:
+            raise ValueError(f"Given output array has dtype {out.dtype}; it should be complex")
 
         if workspace is not None:
             Hwedge, Hv, Hextra, zₐpowers, zᵧpowers, z = self._split_workspace(workspace)
@@ -477,13 +483,22 @@ class Wigner:
                 self.Hwedge, self.Hv, self.Hextra, self.zₐpowers, self.zᵧpowers, self.z
             )
 
-        to_euler_phases(R, z)
-        Hwedge = self.H(z[1], Hwedge, Hv, Hextra)
-        𝔇 = out if out is not None else np.zeros(self.Dsize, dtype=complex)
-        _complex_powers(z[0:1], self.ell_max, zₐpowers)
-        _complex_powers(z[2:3], self.ell_max, zᵧpowers)
-        _fill_wigner_D(self.ell_min, self.ell_max, self.mp_max, 𝔇, Hwedge, zₐpowers[0], zᵧpowers[0])
-        return 𝔇
+        quaternions = quaternionic.array(R).ndarray.reshape((-1, 4))
+        function_values = (
+            out.reshape(quaternions.shape[0], self.Dsize)
+            if out is not None
+            else np.zeros(quaternions.shape[:-1] + (self.Dsize,), dtype=complex)
+        )
+
+        # Loop over all input quaternions
+        for i_R in range(quaternions.shape[0]):
+            to_euler_phases(quaternions[i_R], z)
+            Hwedge = self.H(z[1], Hwedge, Hv, Hextra)
+            𝔇 = function_values[i_R]
+            _complex_powers(z[0:1], self.ell_max, zₐpowers)
+            _complex_powers(z[2:3], self.ell_max, zᵧpowers)
+            _fill_wigner_D(self.ell_min, self.ell_max, self.mp_max, 𝔇, Hwedge, zₐpowers[0], zᵧpowers[0])
+        return function_values.reshape(R.shape[:-1] + (self.Dsize,))
 
     def sYlm(self, s, R, out=None, workspace=None):
         """Evaluate (possibly spin-weighted) spherical harmonic

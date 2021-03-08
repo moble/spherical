@@ -31,6 +31,7 @@ def test_Wigner_D_negative_argument(Rs, ell_max, eps):
         # sf.wigner_D(R, 0, ell_max, out=a)
         # sf.wigner_D(-R, 0, ell_max, out=b)
         assert np.allclose(a, b, rtol=ell_max*eps, atol=2*ell_max*eps)
+    assert np.allclose(wigner.D(R), wigner.D(-R), rtol=ell_max*eps, atol=2*ell_max*eps)
 
 
 @slow
@@ -83,10 +84,20 @@ def test_Wigner_D_inverse_property(Rs, ell_max, eps):
             Dˡ1 = D1[i1:i2+1].reshape(shape)
             Dˡ2 = D2[i1:i2+1].reshape(shape)
             assert np.allclose(Dˡ1 @ Dˡ2, np.identity(2*ell+1), rtol=ϵ, atol=ϵ), ell
+        # print(f"\t{i+1} of {len(Rs)}: R = {R}")
+    D1 = wigner.D(R)
+    D2 = wigner.D(R.inverse)
+    for ell in range(ell_max+1):
+        ϵ = (2*ell+1)**2 * eps
+        i1 = sf.WignerDindex(ell, -ell, -ell)
+        i2 = sf.WignerDindex(ell, ell, ell)
+        shape = (-1, 2*ell+1, 2*ell+1)
+        Dˡ1 = D1[..., i1:i2+1].reshape(shape)
+        Dˡ2 = D2[..., i1:i2+1].reshape(shape)
+        assert np.allclose(Dˡ1 @ Dˡ2, np.identity(2*ell+1), rtol=ϵ, atol=ϵ), ell
 
 
-@slow
-def test_Wigner_D_symmetries(Rs, ell_max_slow, eps):
+def test_Wigner_D_symmetries(Rs, ell_max, eps):
     # We have two obvious symmetries to test.  First,
     #
     #   D_{mp,m}(R) = (-1)^{mp+m} \bar{D}_{-mp,-m}(R)
@@ -97,11 +108,11 @@ def test_Wigner_D_symmetries(Rs, ell_max_slow, eps):
     #
     #   D_{mp,m}(R) = \bar{D}_{m,mp}(\bar{R})
 
-    ϵ = 5 * ell_max_slow * eps
-    D1 = np.zeros(sf.WignerDsize(0, ell_max_slow), dtype=complex)
-    D2 = np.zeros(sf.WignerDsize(0, ell_max_slow), dtype=complex)
-    wigner = sf.Wigner(ell_max_slow)
-    ell_mp_m = sf.WignerDrange(0, ell_max_slow)
+    ϵ = 5 * ell_max * eps
+    D1 = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
+    D2 = np.zeros(sf.WignerDsize(0, ell_max), dtype=complex)
+    wigner = sf.Wigner(ell_max)
+    ell_mp_m = sf.WignerDrange(0, ell_max)
 
     flipped_indices = np.array([
         sf.WignerDindex(ell, -mp, -m)
@@ -122,6 +133,16 @@ def test_Wigner_D_symmetries(Rs, ell_max_slow, eps):
         # D_{mp,m}(R) = \bar{D}_{m,mp}(\bar{R})
         b = D2[swapped_indices].conjugate()
         assert np.allclose(a, b, rtol=ϵ, atol=ϵ)
+
+    D1 = wigner.D(Rs)
+    D2 = wigner.D(Rs.inverse)
+    # D_{mp,m}(R) = (-1)^{mp+m} \bar{D}_{-mp,-m}(R)
+    a = D1
+    b = signs * D1[..., flipped_indices].conjugate()
+    assert np.allclose(a, b, rtol=ϵ, atol=ϵ)
+    # D_{mp,m}(R) = \bar{D}_{m,mp}(\bar{R})
+    b = D2[..., swapped_indices].conjugate()
+    assert np.allclose(a, b, rtol=ϵ, atol=ϵ)
 
 
 def test_Wigner_D_roundoff(Rs, ell_max, eps):
