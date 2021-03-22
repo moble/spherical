@@ -112,7 +112,6 @@ jobs:
           export new_version=$(python .github/scripts/parse_version.py pyproject.toml)
           echo "new_version: '${new_version}'"
           echo "new_version=${new_version}" >> $GITHUB_ENV
-          $HOME/.poetry/bin/poetry remove --dev toml
 
       - name: Tag and push new version
         shell: bash
