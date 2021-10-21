@@ -17,7 +17,7 @@ mkdocs = {version = ">=1.1.2", optional = true, markers = "implementation_name =
 black = {version = ">=20.8b1", optional = true, markers = "implementation_name == 'cpython'", allow-prereleases = true}
 mktheapidocs = {version = ">=0.2", optional = true, markers = "implementation_name == 'cpython'"}
 pymdown-extensions = {version = "^8", optional = true, markers = "implementation_name == 'cpython'"}
-quaternionic = "^0.3"
+quaternionic = "^1.0"
 spinsfast = {version = ">=104.2020.8", markers = "sys_platform != 'win32'"}
 
 [tool.poetry.dev-dependencies]
