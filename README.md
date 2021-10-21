@@ -1,3 +1,4 @@
+<a href="https://doi.org/10.5281/zenodo.5590582"><img align="right" hspace="0" src="https://zenodo.org/badge/DOI/10.5281/zenodo.5590582.svg" alt="DOI"></a>
 [![Test Status](https://github.com/moble/spherical/workflows/tests/badge.svg)](https://github.com/moble/spherical/actions)
 [![Test Coverage](https://codecov.io/gh/moble/spherical/branch/master/graph/badge.svg)](https://codecov.io/gh/moble/spherical)
 [![Documentation Status](https://readthedocs.org/projects/spherical/badge/?version=main)](https://spherical.readthedocs.io/en/main/?badge=main)
