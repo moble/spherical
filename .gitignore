@@ -65,3 +65,4 @@ MANIFEST
 _version.py
 virtualenv
 *.npy
+.envrc
