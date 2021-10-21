@@ -473,7 +473,7 @@ class Wigner:
             raise ValueError(
                 f"Given output array has size {out.size}; it should be {self.Dsize * R.size // 4}"
             )
-        if out is not None and out.dtype != np.complex:
+        if out is not None and out.dtype != complex:
             raise ValueError(f"Given output array has dtype {out.dtype}; it should be complex")
 
         if workspace is not None:
@@ -562,7 +562,7 @@ class Wigner:
             raise ValueError(
                 f"Given output array has size {out.size}; it should be {self.Ysize * R.size // 4}"
             )
-        if out is not None and out.dtype != np.complex:
+        if out is not None and out.dtype != complex:
             raise ValueError(f"Given output array has dtype {out.dtype}; it should be complex")
 
         if workspace is not None:

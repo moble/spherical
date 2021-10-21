@@ -133,7 +133,7 @@ def test_modes_grid():
         n = 2*ell_max+1
         for n_theta, n_phi in [[None, None], [n, None], [None, n], [n, n], [n+1, n], [n, n+1], [n+1, n+1]]:
             g = m.grid(n_theta=n_theta, n_phi=n_phi)
-            assert g.dtype == np.complex
+            assert g.dtype == complex
             assert g.shape[:-2] == a.shape[:-1]
             if n_theta is None:
                 n_theta = n
