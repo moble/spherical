@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "spherical"
-version = "1.0.10"
+version = "1.0.11"
 description = "Evaluate and transform D matrices, 3-j symbols, and (scalar or spin-weighted) spherical harmonics"
 readme = "README.md"
 license = "MIT"
