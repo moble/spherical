@@ -66,3 +66,4 @@ _version.py
 virtualenv
 *.npy
 .envrc
+.venv
