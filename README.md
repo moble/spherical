@@ -1,9 +1,9 @@
-<a href="https://doi.org/10.5281/zenodo.5590582"><img align="right" hspace="0" src="https://zenodo.org/badge/DOI/10.5281/zenodo.5590582.svg" alt="DOI"></a>
 [![Test Status](https://github.com/moble/spherical/workflows/tests/badge.svg)](https://github.com/moble/spherical/actions)
 [![Test Coverage](https://codecov.io/gh/moble/spherical/branch/master/graph/badge.svg)](https://codecov.io/gh/moble/spherical)
 [![Documentation Status](https://readthedocs.org/projects/spherical/badge/?version=main)](https://spherical.readthedocs.io/en/main/?badge=main)
 [![PyPI Version](https://img.shields.io/pypi/v/spherical?color=)](https://pypi.org/project/spherical/)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/spherical.svg?color=)](https://anaconda.org/conda-forge/spherical)
+[![DOI](https://zenodo.org/badge/295054260.svg)](https://zenodo.org/badge/latestdoi/295054260)
 
 
 # Spherical Functions
