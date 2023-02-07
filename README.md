@@ -1,8 +1,9 @@
 [![Test Status](https://github.com/moble/spherical/workflows/tests/badge.svg)](https://github.com/moble/spherical/actions)
-[![Test Coverage](https://codecov.io/gh/moble/spherical/branch/master/graph/badge.svg)](https://codecov.io/gh/moble/spherical)
+[![Test Coverage](https://codecov.io/gh/moble/spherical/branch/main/graph/badge.svg?token=zIw5m2Gs68)](https://codecov.io/gh/moble/spherical)
 [![Documentation Status](https://readthedocs.org/projects/spherical/badge/?version=main)](https://spherical.readthedocs.io/en/main/?badge=main)
 [![PyPI Version](https://img.shields.io/pypi/v/spherical?color=)](https://pypi.org/project/spherical/)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/spherical.svg?color=)](https://anaconda.org/conda-forge/spherical)
+[![DOI](https://zenodo.org/badge/295054260.svg)](https://zenodo.org/badge/latestdoi/295054260)
 
 
 # Spherical Functions

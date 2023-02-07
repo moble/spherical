@@ -50,7 +50,7 @@ jobs:
           poetry run pytest --ell_max_slow=5 --run_slow_tests --durations=0
 
       - name: Upload coverage
-        if: "matrix.python-version == 3.10 && matrix.os == 'ubuntu-latest'"
+        if: "matrix.python-version == '3.10' && matrix.os == 'ubuntu-latest'"
         uses: codecov/codecov-action@v2
 
 
