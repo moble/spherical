@@ -9,9 +9,10 @@ homepage = "https://github.com/moble/spherical"
 include = ["tests"]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
-numpy = "^1.19"
-numba = {version = ">=0.55", markers = "implementation_name == 'cpython'"}
+python = ">=3.8,<3.12"
+importlib-metadata = {version = "^1.0", python = "<3.8"}
+numpy = "^1.13"
+numba = {version = ">=0.50", markers = "implementation_name == 'cpython'"}
 mkdocs = {version = ">=1.1.2", optional = true, markers = "implementation_name == 'cpython'"}
 black = {version = ">=22.1", optional = true, markers = "implementation_name == 'cpython'"}
 mktheapidocs = {version = ">=0.2", optional = true, markers = "implementation_name == 'cpython'"}
