@@ -14,10 +14,10 @@ jobs:
         && !contains(github.event.head_commit.message, '[skip tests]')
 
     strategy:
-      # fail-fast: false
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.9, 3.11]
+        python-version: [3.9, 3.10, 3.11]
 
     steps:
       - name: Check out code
