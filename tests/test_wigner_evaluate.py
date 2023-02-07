@@ -13,6 +13,19 @@ from .conftest import requires_spinsfast
 slow = pytest.mark.slow
 
 
+def test_wigner_d(ell_max_slow):
+    ell_max = max(3, ell_max_slow)
+
+    for ell_min in range(0, ell_max - 1):
+        wigner = sf.Wigner(ell_max, ell_min)
+        for β in np.random.rand(27) * np.pi:
+            expiβ = np.exp(1j * β)
+            d1 = sf.wigner_d(expiβ, ell_min, ell_max)
+            d2 = wigner.d(expiβ)
+            assert np.array_equal(d1, d2)
+
+
+
 @pytest.mark.parametrize("horner", [True, False])
 def test_wigner_evaluate(horner, ell_max_slow, eps):
     import time

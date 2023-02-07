@@ -63,18 +63,18 @@ class Wigner:
         m = np.array([m for n in range(self.ell_max+2) for m in range(-n, n+1)])
         absn = np.array([n for n in range(self.ell_max+2) for m in range(n+1)])
         absm = np.array([m for n in range(self.ell_max+2) for m in range(n+1)])
-        self.a = np.sqrt((absn+1+absm) * (absn+1-absm) / ((2*absn+1)*(2*absn+3)))
-        self.b = np.sqrt((n-m-1) * (n-m) / ((2*n-1)*(2*n+1)))
-        self.b[m<0] *= -1
-        self.d = 0.5 * np.sqrt((n-m) * (n+m+1))
-        self.d[m<0] *= -1
+        self._a = np.sqrt((absn+1+absm) * (absn+1-absm) / ((2*absn+1)*(2*absn+3)))
+        self._b = np.sqrt((n-m-1) * (n-m) / ((2*n-1)*(2*n+1)))
+        self._b[m<0] *= -1
+        self._d = 0.5 * np.sqrt((n-m) * (n+m+1))
+        self._d[m<0] *= -1
         with np.errstate(divide='ignore', invalid='ignore'):
-            self.g = 2*(m+1) / np.sqrt((n-m)*(n+m+1))
-            self.h = np.sqrt((n+m+2)*(n-m-1) / ((n-m)*(n+m+1)))
+            self._g = 2*(m+1) / np.sqrt((n-m)*(n+m+1))
+            self._h = np.sqrt((n+m+2)*(n-m-1) / ((n-m)*(n+m+1)))
         if not (
-            np.all(np.isfinite(self.a)) and
-            np.all(np.isfinite(self.b)) and
-            np.all(np.isfinite(self.d))
+            np.all(np.isfinite(self._a)) and
+            np.all(np.isfinite(self._b)) and
+            np.all(np.isfinite(self._d))
         ):
             raise ValueError("Found a non-finite value inside this object")
 
@@ -349,10 +349,10 @@ class Wigner:
 
         """
         _step_1(Hwedge)
-        _step_2(self.g, self.h, self.ell_max, self.mp_max, Hwedge, Hextra, Hv, expiβ)
-        _step_3(self.a, self.b, self.ell_max, self.mp_max, Hwedge, Hextra, expiβ)
-        _step_4(self.d, self.ell_max, self.mp_max, Hwedge, Hv)
-        _step_5(self.d, self.ell_max, self.mp_max, Hwedge, Hv)
+        _step_2(self._g, self._h, self.ell_max, self.mp_max, Hwedge, Hextra, Hv, expiβ)
+        _step_3(self._a, self._b, self.ell_max, self.mp_max, Hwedge, Hextra, expiβ)
+        _step_4(self._d, self.ell_max, self.mp_max, Hwedge, Hv)
+        _step_5(self._d, self.ell_max, self.mp_max, Hwedge, Hv)
         return Hwedge
 
     def d(self, expiβ, out=None, workspace=None):
