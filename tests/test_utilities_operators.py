@@ -87,3 +87,80 @@ def test_ethbar_inverse_NP():
                            atol=0, rtol=1e-15)
         if sf.LM_index(abs(s), -abs(s), 0) < sf.LM_index(abs(s+1), -abs(s+1), 0):
             assert abs(ethbar_fprime[sf.LM_index(abs(s), -abs(s), 0):sf.LM_index(abs(s+1), -abs(s+1), 0)]).max() == 0.0
+
+
+def test_commutators():
+    import spinsfast
+    eps = 1e-14
+    ell_max = 8
+    np.random.seed(1234)
+    for s in range(-2, 2 + 1):
+        ell_min = abs(s)
+        a = np.random.rand(sf.LM_total_size(ell_min, ell_max)*2)
+        m = sf.Modes(a, spin_weight=s, ell_min=ell_min, ell_max=ell_max)
+        # [L², Lz] = 0
+        assert np.allclose(m.Lz().Lsquared(), m.Lsquared().Lz(), atol=eps, rtol=eps)
+        # [L², L₊] = 0
+        assert np.allclose(m.Lplus().Lsquared(), m.Lsquared().Lplus(), atol=eps, rtol=eps)
+        # [L², L₋] = 0
+        assert np.allclose(m.Lminus().Lsquared(), m.Lsquared().Lminus(), atol=eps, rtol=eps)
+        # [R², Rz] = 0
+        assert np.allclose(m.Rz().Rsquared(), m.Rsquared().Rz(), atol=eps, rtol=eps)
+        # [R², R₊] = 0
+        assert np.allclose(m.Rplus().Rsquared(), m.Rsquared().Rplus(), atol=eps, rtol=eps)
+        # [R², R₋] = 0
+        assert np.allclose(m.Rminus().Rsquared(), m.Rsquared().Rminus(), atol=eps, rtol=eps)
+        # [Lz, L₊] = L₊
+        assert np.allclose(
+            m.Lplus().Lz()-m.Lz().Lplus(),
+            m.Lplus(),
+            atol=eps, rtol=eps
+        )
+        # [Lz, L₋] = -L₋
+        assert np.allclose(
+            m.Lminus().Lz()-m.Lz().Lminus(),
+            -m.Lminus(),
+            atol=eps, rtol=eps
+        )
+        # [L₊, L₋] = 2Lz
+        assert np.allclose(
+            m.Lminus().Lplus()-m.Lplus().Lminus(),
+            2*m.Lz(),
+            atol=eps, rtol=eps
+        )
+        # [Rz, R₊] = R₊
+        assert np.allclose(
+            m.Rplus().Rz()-m.Rz().Rplus(),
+            m.Rplus(),
+            atol=eps, rtol=eps
+        )
+        # [Rz, R₋] = -R₋
+        assert np.allclose(
+            m.Rminus().Rz()-m.Rz().Rminus(),
+            -m.Rminus(),
+            atol=eps, rtol=eps
+        )
+        # [R₊, R₋] = 2Rz
+        assert np.allclose(
+            m.Rminus().Rplus()-m.Rplus().Rminus(),
+            2*m.Rz(),
+            atol=eps, rtol=eps
+        )
+        # [Rz, ð] = -ð
+        assert np.allclose(
+            m.eth.Rz()-m.Rz().eth,
+            -m.eth,
+            atol=eps, rtol=eps
+        )
+        # [Rz, ð̄] = ð̄
+        assert np.allclose(
+            m.ethbar.Rz()-m.Rz().ethbar,
+            m.ethbar,
+            atol=eps, rtol=eps
+        )
+        # [ð, ð̄] = 2Rz
+        assert np.allclose(
+            m.ethbar.eth-m.eth.ethbar,
+            2*m.Rz(),
+            atol=eps, rtol=eps
+        )
