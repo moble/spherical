@@ -90,7 +90,6 @@ def test_ethbar_inverse_NP():
 
 
 def test_commutators():
-    import spinsfast
     eps = 1e-14
     ell_max = 8
     np.random.seed(1234)
