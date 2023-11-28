@@ -1,11 +1,24 @@
 name: tests
 
-on: [push]
+on:
+  push:
+    branches:
+      - main
+    tags: ['*']
+  pull_request:
+
+concurrency:
+  group: test-${{ github.head_ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: "1"
+  FORCE_COLOR: "1"
 
 jobs:
 
   build:
-    name: ${{ matrix.os }} python ${{ matrix.python-version }}
+    name: Python ${{ matrix.python-version }} on ${{ startsWith(matrix.os, 'macos-') && 'macOS' || startsWith(matrix.os, 'windows-') && 'Windows' || 'Linux' }}
 
     runs-on: ${{ matrix.os }}
 
@@ -17,41 +30,26 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.8", "3.10"]
+        python-version: ["3.8", "3.11"]
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Set up python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install poetry
-        shell: bash
-        run: |
-          curl -sSL https://install.python-poetry.org | POETRY_HOME="$HOME/.poetry" python -
-          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-
-      - name: Build and install with poetry
-        shell: bash
-        run: |
-          poetry run python -m pip install --upgrade pip
-          poetry env info
-          rm poetry.lock
-          poetry update
-          poetry build
-          poetry install --no-interaction
+      - name: Install Hatch
+        run: pip install --upgrade hatch
 
       - name: Run tests
-        shell: bash
-        run: |
-          poetry run pytest --ell_max_slow=5 --run_slow_tests --durations=0
-
+        run: hatch run test
+          
       - name: Upload coverage
-        if: "matrix.python-version == '3.10' && matrix.os == 'ubuntu-latest'"
-        uses: codecov/codecov-action@v2
+        if: "matrix.python-version == '3.11' && matrix.os == 'ubuntu-latest'"
+        uses: codecov/codecov-action@v3
 
 
   release:
@@ -65,35 +63,15 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Set up python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+      - name: Set up python
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
-      - name: Install toml
-        if: ${{ env.skipping_build_and_test_replicate != 'true' }}
-        shell: bash
-        run: |
-          python -m pip install --upgrade pip toml
-
-      - name: Install poetry
-        shell: bash
-        run: |
-          curl -sSL https://install.python-poetry.org | POETRY_HOME="$HOME/.poetry" python -
-          echo "$HOME/.poetry/bin" >> $GITHUB_PATH
-
-      - name: Build and install with poetry
-        if: ${{ env.skipping_build_and_test_replicate != 'true' }}
-        shell: bash
-        run: |
-          $HOME/.poetry/bin/poetry run python -m pip install --upgrade pip
-          $HOME/.poetry/bin/poetry env info
-          rm poetry.lock
-          $HOME/.poetry/bin/poetry update
-          $HOME/.poetry/bin/poetry build
-          $HOME/.poetry/bin/poetry install --no-interaction --no-dev
+      - name: Install Hatch
+        run: pip install --upgrade hatch
 
       - name: Bump version
         shell: bash
@@ -102,17 +80,27 @@ jobs:
         run: |
           export version_bump_rule=$(python .github/scripts/parse_bump_rule.py)
           echo "version_bump_rule: '${version_bump_rule}'"
-          $HOME/.poetry/bin/poetry version "${version_bump_rule}"
-          export new_version=$(python .github/scripts/parse_version.py pyproject.toml)
+          hatch version "${version_bump_rule}"
+          export new_version=$(TERM="unknown" hatch version)
           echo "new_version: '${new_version}'"
-          echo "new_version=${new_version}" >> $GITHUB_ENV
+          echo "new_version=${new_version}" >> $GITHUB_ENV  # Save env variable for later steps
+
+      - name: Update CITATION.cff
+        shell: bash
+        env:
+          timestamp: ${{ github.event.head_commit.timestamp }}
+        run: |
+          new_date=${timestamp:0:10}
+          sed -i -- "s/^version:.*/version: ${new_version}/" CITATION.cff
+          sed -i -- "s/^date-released:.*/date-released: ${new_date}/" CITATION.cff
+          echo "Updated CITATION.cff with version ${new_version} and date ${new_date}"
 
       - name: Tag and push new version
         shell: bash
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git add pyproject.toml
+          git add CITATION.cff spherical/__version__.py
           git commit -m "Bump version to v${new_version}"
           git tag -a "v${new_version}" -m "Version ${new_version}"
           git status
@@ -135,10 +123,9 @@ jobs:
         env:
           # 1) Get key from https://pypi.org/manage/account/token/
           # 2) Copy it to Github > repo > Settings > Secrets
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
+          HATCH_INDEX_USER: __token__
+          HATCH_INDEX_AUTH: ${{ secrets.PYPI_TOKEN }}
         shell: bash
         run: |
-          # Do these first two steps again to ensure the version is right
-          $HOME/.poetry/bin/poetry build
-          $HOME/.poetry/bin/poetry install --no-interaction --no-dev
-          $HOME/.poetry/bin/poetry publish
+          hatch build
+          hatch publish
