@@ -41,7 +41,8 @@ path = "spherical/__version__.py"
 dependencies = [
   "pytest",
   "pytest-cov",
-  "black"
+  "black",
+  "sympy"
 ]
 [tool.hatch.envs.default.scripts]
 # Run these as `hatch run test`
