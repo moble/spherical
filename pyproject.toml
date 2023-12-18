@@ -25,6 +25,13 @@ dependencies = [
   "spinsfast >=104.2020.8; sys_platform != 'win32'"
 ]
 
+[project.optional-dependencies]
+docs = [
+  "mkdocs",
+  "mktheapidocs",
+  "pymdown-extensions"
+]
+
 [project.urls]
 Homepage = "https://github.com/moble/spherical"
 Documentation = "https://spherical.readthedocs.io/"
