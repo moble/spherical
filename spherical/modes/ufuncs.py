@@ -44,7 +44,7 @@ def __array_ufunc__(self, ufunc, method, *args, out=None, **kwargs):
             ell_min = min(m1.ell_min, m2.ell_min)
             ell_max = max(m1.ell_max, m2.ell_max)
             shape = np.broadcast(m1[..., 0], m2[..., 0]).shape + (LM_total_size(ell_min, ell_max),)
-            result = out or np.zeros(shape, dtype=np.complex_)
+            result = out or np.zeros(shape, dtype=np.complex128)
             if isinstance(result, tuple):
                 result = result[0]
             if isinstance(result, type(self)):
@@ -99,7 +99,7 @@ def __array_ufunc__(self, ufunc, method, *args, out=None, **kwargs):
                 ]
             )
             result_shape = np.broadcast(s[..., 0], o[..., 0]).shape + (LM_total_size(result_ell_min, result_ell_max),)
-            result = out or np.zeros(result_shape, dtype=np.complex_)
+            result = out or np.zeros(result_shape, dtype=np.complex128)
             if isinstance(result, tuple):
                 result = result[0]
             if isinstance(result, type(self)):

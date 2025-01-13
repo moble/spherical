@@ -118,7 +118,7 @@ def multiply(f, ellmin_f, ellmax_f, s_f, g, ellmin_g, ellmax_g, s_g):
     ellmax_fg = ellmax_f + ellmax_g
     ellmin_fg = 0
     shape_fg = np.broadcast(f[..., 0], g[..., 0]).shape + (LM_total_size(0, ellmax_fg),)
-    fg = np.zeros(shape_fg, dtype=np.complex_)
+    fg = np.zeros(shape_fg, dtype=np.complex128)
 
     _multiplication_helper(f, ellmin_f, ellmax_f, s_f,
                            g, ellmin_g, ellmax_g, s_g,

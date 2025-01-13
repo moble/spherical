@@ -176,7 +176,7 @@ def add(self, other, subtraction=False):
         ell_min = min(self.ell_min, other.ell_min)
         ell_max = max(self.ell_max, other.ell_max)
         shape = np.broadcast(self[..., 0], other[..., 0]).shape + (LM_total_size(ell_min, ell_max),)
-        result = np.zeros(shape, dtype=np.complex_)
+        result = np.zeros(shape, dtype=np.complex128)
         i_s1 = LM_total_size(ell_min, self.ell_min-1)
         i_s2 = i_s1+LM_total_size(self.ell_min, self.ell_max)
         i_o1 = LM_total_size(ell_min, other.ell_min-1)
@@ -254,7 +254,7 @@ def multiply(self, other, truncator=None):
                 ]
             )
         new_shape = np.broadcast(s[..., 0], o[..., 0]).shape + (LM_total_size(new_ell_min, new_ell_max),)
-        new = np.zeros(new_shape, dtype=np.complex_)
+        new = np.zeros(new_shape, dtype=np.complex128)
         _multiplication_helper(s, self.ell_min, self.ell_max, self.spin_weight,
                                o, other.ell_min, other.ell_max, other.spin_weight,
                                new, new_ell_min, new_ell_max, new_s)
