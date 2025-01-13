@@ -3,7 +3,7 @@ name = "spherical"
 dynamic = ["version"]
 description = "Evaluate and transform D matrices, 3-j symbols, and (scalar or spin-weighted) spherical harmonics"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = {file = "LICENSE"}
 authors = [
   { name = "Michael Boyle", email = "michael.oliver.boyle@gmail.com" }
