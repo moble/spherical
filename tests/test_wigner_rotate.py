@@ -45,7 +45,7 @@ def test_wigner_rotate_composition(horner, Rs, ell_max_slow, eps):
 
                 # import warnings
                 # warnings.warn("Eliminating assert for debugging")
-                assert np.allclose(fA, fB, rtol=ϵ, atol=ϵ), f"{np.max(np.abs(fA-fB))} > {ϵ} for R1={R1} R2={R2}"
+                assert np.allclose(fA.ndarray, fB.ndarray, rtol=ϵ, atol=ϵ), f"{np.max(np.abs((fA-fB).ndarray))} > {ϵ} for R1={R1} R2={R2}"
 
     print(f"\tmax_error[{horner}] = {max_error}")
     print(f"\ttotal_time[{horner}] = {total_time}")

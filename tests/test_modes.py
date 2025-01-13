@@ -443,17 +443,17 @@ def test_modes_squared_angular_momenta():
         # Test L^2 = 0.5(L+L- + L-L+) + LzLz
         m1 = L2(m)
         m2 = 0.5 * (Lp(Lm(m)) + Lm(Lp(m))) + Lz(Lz(m))
-        assert np.allclose(m1, m2, rtol=tolerance, atol=tolerance)
+        assert np.allclose(m1.ndarray, m2.ndarray, rtol=tolerance, atol=tolerance)
 
         # Test R^2 = 0.5(R+R- + R-R+) + RzRz
         m1 = R2(m)
         m2 = 0.5 * (Rp(Rm(m)) + Rm(Rp(m))) + Rz(Rz(m))
-        assert np.allclose(m1, m2, rtol=tolerance, atol=tolerance)
+        assert np.allclose(m1.ndarray, m2.ndarray, rtol=tolerance, atol=tolerance)
 
         # Test L^2 = R^2
         m1 = L2(m)
         m2 = R2(m)
-        assert np.allclose(m1, m2, rtol=tolerance, atol=tolerance)
+        assert np.allclose(m1.ndarray, m2.ndarray, rtol=tolerance, atol=tolerance)
 
 
 def test_modes_derivative_commutators():
@@ -489,19 +489,19 @@ def test_modes_derivative_commutators():
         for R in [Rz, Rp, Rm]:
             assert np.max(np.abs(R2(R(m)) - R(R2(m)))) < 5*tolerance
         # Test [Lz, Lp] = Lp
-        assert np.allclose(Lz(Lp(m)) - Lp(Lz(m)), Lp(m), rtol=tolerance, atol=tolerance)
+        assert np.allclose((Lz(Lp(m)) - Lp(Lz(m))).ndarray, Lp(m).ndarray, rtol=tolerance, atol=tolerance)
         # Test [Lz, Lm] = -Lm
-        assert np.allclose(Lz(Lm(m)) - Lm(Lz(m)), -Lm(m), rtol=tolerance, atol=tolerance)
+        assert np.allclose((Lz(Lm(m)) - Lm(Lz(m))).ndarray, -Lm(m).ndarray, rtol=tolerance, atol=tolerance)
         # Test [Lp, Lm] = 2Lz
-        assert np.allclose(Lp(Lm(m)) - Lm(Lp(m)), 2 * Lz(m), rtol=tolerance, atol=tolerance)
+        assert np.allclose((Lp(Lm(m)) - Lm(Lp(m))).ndarray, 2 * Lz(m).ndarray, rtol=tolerance, atol=tolerance)
         # Test [Rz, Rp] = Rp
-        assert np.allclose(Rz(Rp(m)) - Rp(Rz(m)), Rp(m), rtol=tolerance, atol=tolerance)
+        assert np.allclose((Rz(Rp(m)) - Rp(Rz(m))).ndarray, Rp(m).ndarray, rtol=tolerance, atol=tolerance)
         # Test [Rz, Rm] = -Rm
-        assert np.allclose(Rz(Rm(m)) - Rm(Rz(m)), -Rm(m), rtol=tolerance, atol=tolerance)
+        assert np.allclose((Rz(Rm(m)) - Rm(Rz(m))).ndarray, -Rm(m).ndarray, rtol=tolerance, atol=tolerance)
         # Test [Rp, Rm] = 2Rz
-        assert np.allclose(Rp(Rm(m)) - Rm(Rp(m)), 2 * Rz(m), rtol=tolerance, atol=tolerance)
+        assert np.allclose((Rp(Rm(m)) - Rm(Rp(m))).ndarray, 2 * Rz(m).ndarray, rtol=tolerance, atol=tolerance)
         # Test [ethbar, eth] = 2s
-        assert np.allclose(ethbar(eth(m)) - eth(ethbar(m)), 2 * m.s * m, rtol=tolerance, atol=tolerance)
+        assert np.allclose((ethbar(eth(m)) - eth(ethbar(m))).ndarray, 2 * m.s * m.ndarray, rtol=tolerance, atol=tolerance)
 
 
 @requires_spinsfast
