@@ -45,6 +45,7 @@ build-backend = "hatchling.build"
 path = "spherical/__version__.py"
 
 [tool.hatch.envs.default]
+installer = "uv"
 dependencies = [
   "pytest",
   "pytest-cov",
