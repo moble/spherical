@@ -3,7 +3,7 @@ name = "spherical"
 dynamic = ["version"]
 description = "Evaluate and transform D matrices, 3-j symbols, and (scalar or spin-weighted) spherical harmonics"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {file = "LICENSE"}
 authors = [
   { name = "Michael Boyle", email = "michael.oliver.boyle@gmail.com" }
@@ -70,7 +70,7 @@ serve = "mkdocs serve --dev-addr localhost:8000"
 
 [tool.black]
 line-length = 120
-target-version = ["py38"]
+target-version = ["py310"]
 
 
 [tool.pytest.ini_options]
