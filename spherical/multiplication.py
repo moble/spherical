@@ -123,10 +123,7 @@ def multiply(f, ellmin_f, ellmax_f, s_f, g, ellmin_g, ellmax_g, s_g, ellmin_fg=0
 
     """
     s_fg = s_f + s_g
-    if ellmax_fg is None:
-        ellmax_fg = ellmax_f + ellmax_g
-    else:
-        ellmax_fg = ellmax_fg
+    ellmax_fg = ellmax_fg if ellmax_fg is not None else ellmax_f + ellmax_g
     ellmin_fg = ellmin_fg
     shape_fg = np.broadcast(f[..., 0], g[..., 0]).shape + (LM_total_size(ellmin_fg, ellmax_fg),)
     fg = np.zeros(shape_fg, dtype=np.complex128)
