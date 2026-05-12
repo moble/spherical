@@ -35,7 +35,7 @@ def _multiplication_helper(f, ellmin_f, ellmax_f, s_f,
     return fg
 
 
-def multiply(f, ellmin_f, ellmax_f, s_f, g, ellmin_g, ellmax_g, s_g, ellmin_fg=0, ellmax_fg=None):
+def multiply(f, ellmin_f, ellmax_f, s_f, g, ellmin_g, ellmax_g, s_g, ellmin_fg=None, ellmax_fg=None):
     """Return modes of the decomposition of f*g
 
     We can multiply SWSHs as
@@ -124,7 +124,7 @@ def multiply(f, ellmin_f, ellmax_f, s_f, g, ellmin_g, ellmax_g, s_g, ellmin_fg=0
     """
     s_fg = s_f + s_g
     ellmax_fg = ellmax_fg if ellmax_fg is not None else ellmax_f + ellmax_g
-    ellmin_fg = min(ellmin_f, ellmin_g)
+    ellmin_fg = ellmin_fg if ellmin_fg is not None else min(ellmin_f, ellmin_g)
     shape_fg = np.broadcast(f[..., 0], g[..., 0]).shape + (LM_total_size(ellmin_fg, ellmax_fg),)
     fg = np.zeros(shape_fg, dtype=np.complex128)
 
