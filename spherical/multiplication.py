@@ -123,6 +123,8 @@ def multiply(f, ellmin_f, ellmax_f, s_f, g, ellmin_g, ellmax_g, s_g, ellmin_fg=0
 
     """
     s_fg = s_f + s_g
+    if ellmin_fg > abs(s_fg):
+        raise ValueError(f"Input {ellmin_fg=} is too large for s_fg = ({s_f=}) + ({s_g=}) = {s_fg}")
     ellmax_fg = ellmax_fg if ellmax_fg is not None else ellmax_f + ellmax_g
 
     shape_fg = np.broadcast(f[..., 0], g[..., 0]).shape + (LM_total_size(ellmin_fg, ellmax_fg),)
