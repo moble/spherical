@@ -35,7 +35,7 @@ def _multiplication_helper(f, ellmin_f, ellmax_f, s_f,
     return fg
 
 
-def multiply(f, ellmin_f, ellmax_f, s_f, g, ellmin_g, ellmax_g, s_g):
+def multiply(f, ellmin_f, ellmax_f, s_f, g, ellmin_g, ellmax_g, s_g, ellmin_fg=0, ellmax_fg=None):
     """Return modes of the decomposition of f*g
 
     We can multiply SWSHs as
@@ -100,6 +100,14 @@ def multiply(f, ellmin_f, ellmax_f, s_f, g, ellmin_g, ellmax_g, s_g):
         As above, but for the second function
     s_g: int
         As above, but for the second function
+    ellmin_fg: int
+        Minimum ell mode to include in the output f*g. Modes below this
+        value are excluded from the result.
+        Default is 0
+    ellmax_fg: int
+        Maximum ell mode to include in the output f*g. If None, defaults
+        to ``ellmax_f + ellmax_g``.
+        Default is None.
 
     Returns
     -------
@@ -115,9 +123,11 @@ def multiply(f, ellmin_f, ellmax_f, s_f, g, ellmin_g, ellmax_g, s_g):
 
     """
     s_fg = s_f + s_g
-    ellmax_fg = ellmax_f + ellmax_g
-    ellmin_fg = 0
-    shape_fg = np.broadcast(f[..., 0], g[..., 0]).shape + (LM_total_size(0, ellmax_fg),)
+    if ellmin_fg > abs(s_fg):
+        raise ValueError(f"Input {ellmin_fg=} is too large for s_fg = ({s_f=}) + ({s_g=}) = {s_fg}")
+    ellmax_fg = ellmax_fg if ellmax_fg is not None else ellmax_f + ellmax_g
+
+    shape_fg = np.broadcast(f[..., 0], g[..., 0]).shape + (LM_total_size(ellmin_fg, ellmax_fg),)
     fg = np.zeros(shape_fg, dtype=np.complex128)
 
     _multiplication_helper(f, ellmin_f, ellmax_f, s_f,

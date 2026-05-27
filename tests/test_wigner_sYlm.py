@@ -102,7 +102,12 @@ def test_sYlm_vs_NINJA(special_angles, ell_max_slow, eps):
 
 @requires_scipy
 def test_sYlm_vs_scipy(special_angles, ell_max, eps):
-    from scipy.special import sph_harm
+    try:
+        from scipy.special import sph_harm
+    except ImportError:
+        from scipy.special import sph_harm_y
+        def sph_harm(m, n, theta, phi):
+            return sph_harm_y(n, m, phi, theta)
     ϵ = 2 * ell_max * eps
     wigner = sf.Wigner(ell_max)
 
